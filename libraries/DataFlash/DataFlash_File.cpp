@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <AP_Math.h>
@@ -81,6 +82,7 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     // create the log directory if need be
     int ret;
     struct stat st;
+    struct statfs stfs;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // try to cope with an existing lowercase log directory
@@ -125,6 +127,14 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
         return;        
     }
     _writebuf_head = _writebuf_tail = 0;
+
+    if(statfs("/fs/microsd", &stfs) == 0) {
+        hal.console->printf("Optimal size is %u\n", stfs.f_bsize);
+        
+    } else {
+        hal.console->printf("Unable to read filesystem space remaining\n");
+    }
+
     _initialised = true;
     hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&DataFlash_File::_io_timer));
 }
