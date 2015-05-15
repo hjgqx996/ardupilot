@@ -28,7 +28,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MAX_LOG_FILES 500U
+#define MAX_LOG_FILES 999U
 #define DATAFLASH_PAGE_SIZE 1024UL
 
 /*
@@ -150,7 +150,7 @@ bool DataFlash_File::NeedErase(void)
 char *DataFlash_File::_log_file_name(uint16_t log_num)
 {
     char *buf = NULL;
-    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == 0) {
+    if (asprintf(&buf, "%s/%03u.BIN", _log_directory, (unsigned)log_num) == 0) {
         return NULL;
     }
     return buf;
