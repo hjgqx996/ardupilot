@@ -46,6 +46,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
     _accel_z_cms(POSCONTROL_ACCEL_Z),
+    _accel_last_z_cms(0.0f),
     _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
@@ -60,13 +61,20 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise flags
-    _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
+    _flags.recalc_leash_xy = true;
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
+    _flags.freeze_ff_xy = true;
+    _flags.freeze_ff_z = true;
+    _limit.pos_up = true;
+    _limit.pos_down = true;
+    _limit.vel_up = true;
+    _limit.vel_down = true;
+    _limit.accel_xy = true;
 }
 
 ///
@@ -106,6 +114,7 @@ void AC_PosControl::set_speed_z(float speed_down, float speed_up)
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
+        calc_leash_length_z();
     }
 }
 
@@ -115,6 +124,7 @@ void AC_PosControl::set_accel_z(float accel_cmss)
     if (fabsf(_accel_z_cms-accel_cmss) > 1.0f) {
         _accel_z_cms = accel_cmss;
         _flags.recalc_leash_z = true;
+        calc_leash_length_z();
     }
 }
 
@@ -250,7 +260,7 @@ void AC_PosControl::init_takeoff()
     freeze_ff_z();
 
     // shift difference between last motor out and hover throttle into accelerometer I
-    _pid_accel_z.set_integrator(_motors.get_throttle_out()-_throttle_hover);
+    _pid_accel_z.set_integrator(_motors.get_throttle()-_throttle_hover);
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
@@ -407,6 +417,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
 
     // set input to PID
     _pid_accel_z.set_input_filter_d(_accel_error.z);
+    _pid_accel_z.set_desired_rate(accel_target_z);
 
     // separately calculate p, i, d values for logging
     p = _pid_accel_z.get_p();
@@ -440,6 +451,7 @@ void AC_PosControl::set_accel_xy(float accel_cmss)
     if (fabsf(_accel_cms-accel_cmss) > 1.0f) {
         _accel_cms = accel_cmss;
         _flags.recalc_leash_xy = true;
+        calc_leash_length_xy();
     }
 }
 
@@ -450,6 +462,7 @@ void AC_PosControl::set_speed_xy(float speed_cms)
     if (fabsf(_speed_cms-speed_cms) > 1.0f) {
         _speed_cms = speed_cms;
         _flags.recalc_leash_xy = true;
+        calc_leash_length_xy();
     }
 }
 
@@ -656,7 +669,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     accel_to_lean_angles(dt, ekfNavVelGainScaler);
 
     // update altitude target
-    set_alt_target_from_climb_rate(_vel_desired.z, dt);
+    set_alt_target_from_climb_rate(_vel_desired.z, dt, false);
 
     // run z-axis position controller
     update_z_controller();

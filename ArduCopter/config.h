@@ -104,9 +104,24 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define RATE_ROLL_D                          0
-  # define RATE_PITCH_D                         0
-  # define MPU6K_FILTER                         10
+  # define RATE_ROLL_P                          0.02
+  # define RATE_ROLL_I                          0.5
+  # define RATE_ROLL_D                          0.001
+  # define RATE_ROLL_IMAX                       4500
+  # define RATE_ROLL_FF                         0.05
+  # define RATE_ROLL_FILT_HZ                    20.0f
+  # define RATE_PITCH_P                         0.02
+  # define RATE_PITCH_I                         0.5
+  # define RATE_PITCH_D                         0.001
+  # define RATE_PITCH_IMAX                      4500
+  # define RATE_PITCH_FF                        0.05
+  # define RATE_PITCH_FILT_HZ                   20.0f
+  # define RATE_YAW_P                           0.15
+  # define RATE_YAW_I                           0.100
+  # define RATE_YAW_D                           0.003
+  # define RATE_YAW_IMAX                        4500
+  # define RATE_YAW_FF                          0.02
+  # define RATE_YAW_FILT_HZ                     20.0f
   # define HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
   # define HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
   # define THR_MIN_DEFAULT                      0
@@ -225,7 +240,7 @@
 
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
- # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  2000    // RC Radio failsafe triggers after 2 seconds while using RC_override from ground station
+ # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
 #endif
 
 // Radio failsafe
@@ -254,9 +269,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  EKF Checker
-#ifndef EKFCHECK_THRESHOLD_DEFAULT
- # define EKFCHECK_THRESHOLD_DEFAULT    0.8f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
+//  EKF Failsafe
+#ifndef FS_EKF_ACTION_DEFAULT
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+#endif
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+ # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
 #ifndef EKF_ORIGIN_MAX_DIST_M
@@ -293,11 +311,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- #if AP_AHRS_NAVEKF_AVAILABLE
-  # define OPTFLOW       ENABLED
- #else
-  # define OPTFLOW       DISABLED
- #endif
+ # define OPTFLOW       ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -580,8 +594,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
-#ifndef STOP_MODE_DECEL_RATE
- # define STOP_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Stop Mode
+#ifndef BRAKE_MODE_SPEED_Z
+ # define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
+#endif
+#ifndef BRAKE_MODE_DECEL_RATE
+ # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

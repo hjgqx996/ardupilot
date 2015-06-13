@@ -120,7 +120,7 @@ public:
         k_param_serial2_baud,           // deprecated - remove
         k_param_land_repositioning,
         k_param_sonar, // sonar object
-        k_param_ekfcheck_thresh,
+        k_param_fs_ekf_thresh,
         k_param_terrain,
         k_param_acro_expo,
         k_param_throttle_deadzone,
@@ -194,6 +194,7 @@ public:
         k_param_ch12_option,     // 123
         k_param_takeoff_trigger_dz,
         k_param_gcs3,            // 125
+        k_param_gcs_pid_mask,
 
         //
         // 140: Sensor parameters
@@ -328,6 +329,7 @@ public:
         k_param_autotune_axis_bitmask,  // 245
         k_param_autotune_aggressiveness,  // 246
         k_param_pi_vel_xy,  // 247
+        k_param_fs_ekf_action, // 248
 
         // 254,255: reserved
     };
@@ -413,7 +415,9 @@ public:
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;
-    AP_Float        ekfcheck_thresh;
+    AP_Int8         fs_ekf_action;
+    AP_Float        fs_ekf_thresh;
+    AP_Int16        gcs_pid_mask;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
@@ -529,9 +533,15 @@ public:
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
+#if FRAME_CONFIG == HELI_FRAME
+        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS, RATE_ROLL_FF),
+        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS, RATE_PITCH_FF),
+        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS, RATE_YAW_FF),
+#else
         pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
         pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
         pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS),
+#endif
 
         pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
 

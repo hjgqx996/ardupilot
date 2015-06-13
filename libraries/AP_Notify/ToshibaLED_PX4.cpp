@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <px4_defines.h>
 #include <drivers/drv_rgbled.h>
 #include <stdio.h>
 #include <errno.h>
@@ -43,7 +44,7 @@ bool ToshibaLED_PX4::hw_init()
     ioctl(_rgbled_fd, RGBLED_SET_MODE, (unsigned long)RGBLED_MODE_ON);
     last.v = 0;
     next.v = 0;
-    hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&ToshibaLED_PX4::update_timer));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&ToshibaLED_PX4::update_timer, void));
     return true;
 }
 

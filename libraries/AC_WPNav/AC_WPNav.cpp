@@ -127,6 +127,14 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _yaw(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // init flags
+    _flags.reached_destination = false;
+    _flags.fast_waypoint = false;
+    _flags.slowing_down = false;
+    _flags.recalc_wp_leash = false;
+    _flags.new_wp_destination = false;
+    _flags.segment_type = SEGMENT_STRAIGHT;
 }
 
 ///
@@ -309,8 +317,8 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
     }
 }
 
-/// init_stop_target - initializes stop position from current position and velocity
-void AC_WPNav::init_stop_target(float accel_cmss)
+/// init_brake_target - initializes stop position from current position and velocity
+void AC_WPNav::init_brake_target(float accel_cmss)
 {
     const Vector3f& curr_vel = _inav.get_velocity();
     Vector3f stopping_point;
@@ -329,8 +337,8 @@ void AC_WPNav::init_stop_target(float accel_cmss)
     init_loiter_target(stopping_point);
 }
 
-// update_stop - run the stop controller - gets called at 400hz
-void AC_WPNav::update_stop(float ekfGndSpdLimit, float ekfNavVelGainScaler)
+// update_brake - run the stop controller - gets called at 400hz
+void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();

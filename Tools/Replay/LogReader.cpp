@@ -17,23 +17,6 @@
 #include <fcntl.h>
 
 #include "MsgHandler.h"
-#include "MsgHandler_PARM.h"
-#include "MsgHandler_GPS.h"
-#include "MsgHandler_GPS2.h"
-#include "MsgHandler_MSG.h"
-#include "MsgHandler_IMU.h"
-#include "MsgHandler_IMU2.h"
-#include "MsgHandler_IMU3.h"
-#include "MsgHandler_SIM.h"
-#include "MsgHandler_BARO.h"
-#include "MsgHandler_ARM.h"
-#include "MsgHandler_Event.h"
-#include "MsgHandler_AHR2.h"
-#include "MsgHandler_ATT.h"
-#include "MsgHandler_MAG.h"
-#include "MsgHandler_MAG2.h"
-#include "MsgHandler_NTUN_Copter.h"
-#include "MsgHandler_ARSP.h"
 
 #define streq(x, y) (!strcmp(x, y))
 
@@ -97,6 +80,25 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 
 MsgHandler_PARM *parameter_handler;
 
+/*
+  messages which we will be generating, so should be discarded
+ */
+static const char *generated_types[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5", 
+                                         "AHR2", "POS", NULL };
+
+/*
+  see if a type is in a list of types
+ */
+bool LogReader::in_list(const char *type, const char *list[])
+{
+    for (uint8_t i=0; list[i] != NULL; i++) {
+        if (strcmp(type, list[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool LogReader::update(char type[5])
 {
     uint8_t hdr[3];
@@ -123,7 +125,11 @@ bool LogReader::update(char type[5])
 	memcpy(name, f.name, 4);
 	::printf("Defining log format for type (%d) (%s)\n", f.type, name);
 
-        dataflash.WriteBlock(&f, sizeof(f));
+        if (!in_list(type, generated_types)) {
+            // any messages which we won't be generating internally in
+            // replay should get the original FMT header
+            dataflash.WriteBlock(&f, sizeof(f));
+        }
 
 	// map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
@@ -197,6 +203,9 @@ bool LogReader::update(char type[5])
 	    msgparser[f.type] = new MsgHandler_ARSP(formats[f.type], dataflash,
                                                     last_timestamp_usec,
                                                     airspeed);
+	} else if (streq(name, "FRAM")) {
+	    msgparser[f.type] = new MsgHandler_FRAM(formats[f.type], dataflash,
+                                                    last_timestamp_usec);
 	} else {
             ::printf("  No parser for (%s)\n", name);
 	}
@@ -222,11 +231,16 @@ bool LogReader::update(char type[5])
     strncpy(type, f.name, 4);
     type[4] = 0;
 
+    if (!in_list(type, generated_types)) {
+        dataflash.WriteBlock(msg, f.length);        
+        // a MsgHandler would probably have found a timestamp and
+        // caled stop_clock.  This runs IO, clearing dataflash's
+        // buffer.
+        hal.scheduler->stop_clock(last_timestamp_usec);
+    }
+
     MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
-	// I guess this wasn't as self-describing as it could have been....
-	// ::printf("No format message received for type %d; ignoring message\n",
-	// 	 type);
 	return true;
     }
 

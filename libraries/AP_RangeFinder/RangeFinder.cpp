@@ -185,6 +185,18 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+RangeFinder::RangeFinder(void) :
+    primary_instance(0),
+    num_instances(0),
+    estimated_terrain_height(0)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+
+    // init state and drivers
+    memset(state,0,sizeof(state));
+    memset(drivers,0,sizeof(drivers));
+}
+
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
@@ -299,7 +311,7 @@ void RangeFinder::detect_instance(uint8_t instance)
 RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 {
     // sanity check instance
-    if (instance > RANGEFINDER_MAX_INSTANCES) {
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
         return RangeFinder_NotConnected;
     }
 
@@ -314,7 +326,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 bool RangeFinder::has_data(uint8_t instance) const
 {
     // sanity check instance
-    if (instance > RANGEFINDER_MAX_INSTANCES) {
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
         return RangeFinder_NotConnected;
     }
     return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));

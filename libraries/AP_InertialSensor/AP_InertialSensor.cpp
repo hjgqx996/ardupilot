@@ -285,6 +285,10 @@ AP_InertialSensor::AP_InertialSensor() :
     _hil_mode(false),
     _calibrating(false),
     _log_raw_data(false),
+#if INS_VIBRATION_CHECK
+    _accel_vibe_floor_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ),
+    _accel_vibe_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ),
+#endif
     _dataflash(NULL)
 {
     AP_Param::setup_object_defaults(this, var_info);        
@@ -294,6 +298,9 @@ AP_InertialSensor::AP_InertialSensor() :
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
+#if INS_VIBRATION_CHECK
+        _accel_clip_count[i] = 0;
+#endif
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
@@ -426,6 +433,26 @@ AP_InertialSensor::_detect_backends(void)
 
     // set the product ID to the ID of the first backend
     _product_id.set(_backends[0]->product_id());
+}
+
+/*
+  _calculate_trim - calculates the x and y trim angles. The
+  accel_sample must be correctly scaled, offset and oriented for the
+  board 
+*/
+bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
+{
+    trim_pitch = atan2f(accel_sample.x, pythagorous2(accel_sample.y, accel_sample.z));
+    trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
+    if (fabsf(trim_roll) > radians(10) || 
+        fabsf(trim_pitch) > radians(10)) {
+        hal.console->println_P(PSTR("trim over maximum of 10 degrees"));
+        return false;
+    }
+    hal.console->printf_P(PSTR("Trim OK: roll=%.2f pitch=%.2f\n"),
+                          (double)degrees(trim_roll),
+                          (double)degrees(trim_pitch));
+    return true;
 }
 
 #if !defined( __AVR_ATmega1280__ )
@@ -582,9 +609,15 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
           We use the original board rotation for this sample
         */
         Vector3f level_sample = samples[0][0];
+        level_sample.x *= new_scaling[0].x;
+        level_sample.y *= new_scaling[0].y;
+        level_sample.z *= new_scaling[0].z;
+        level_sample -= new_offsets[0];
         level_sample.rotate(saved_orientation);
 
-        _calculate_trim(level_sample, trim_roll, trim_pitch);
+        if (!_calculate_trim(level_sample, trim_roll, trim_pitch)) {
+            goto failed;
+        }
 
         _board_orientation = saved_orientation;
 
@@ -613,6 +646,17 @@ AP_InertialSensor::init_gyro()
     // save calibration
     _save_parameters();
 }
+
+#if INS_VIBRATION_CHECK
+// accelerometer clipping reporting
+uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
+{
+    if (instance >= get_accel_count()) {
+        return 0;
+    }
+    return _accel_clip_count[instance];
+}
+#endif
 
 // get_gyro_health_all - return true if all gyros are healthy
 bool AP_InertialSensor::get_gyro_health_all(void) const
@@ -647,6 +691,60 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     }
     // return true if we have at least one accel
     return (get_accel_count() > 0);
+}
+
+
+/*
+  calculate the trim_roll and trim_pitch. This is used for redoing the
+  trim without needing a full accel cal
+ */
+bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
+{
+    Vector3f level_sample;
+
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return false;
+    }
+
+    _calibrating = true;
+
+    const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_sample_rate()+0.5f);
+
+    // wait 100ms for ins filter to rise
+    for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
+        wait_for_sample();
+        update();
+        hal.scheduler->delay(update_dt_milliseconds);
+    }
+
+    uint32_t num_samples = 0;
+    while (num_samples < 400/update_dt_milliseconds) {
+        wait_for_sample();
+        // read samples from ins
+        update();
+        // capture sample
+        Vector3f samp;
+        samp = get_accel(0);
+        level_sample += samp;
+        if (!get_accel_health(0)) {
+            goto failed;
+        }
+        hal.scheduler->delay(update_dt_milliseconds);
+        num_samples++;
+    }
+    level_sample /= num_samples;
+
+    if (!_calculate_trim(level_sample, trim_roll, trim_pitch)) {
+        goto failed;
+    }
+
+    _calibrating = false;
+    return true;
+
+failed:
+    _calibrating = false;
+    return false;    
 }
 
 /*
@@ -1020,33 +1118,6 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
     }
 }
 
-// _calculate_trim  - calculates the x and y trim angles (in radians) given a raw accel sample (i.e. no scaling or offsets applied) taken when the vehicle was level
-void AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
-{
-    // scale sample and apply offsets
-    const Vector3f &accel_scale = _accel_scale[0].get();
-    const Vector3f &accel_offsets = _accel_offset[0].get();
-    Vector3f scaled_accels_x( accel_sample.x * accel_scale.x - accel_offsets.x,
-                              0,
-                              accel_sample.z * accel_scale.z - accel_offsets.z );
-    Vector3f scaled_accels_y( 0,
-                              accel_sample.y * accel_scale.y - accel_offsets.y,
-                              accel_sample.z * accel_scale.z - accel_offsets.z );
-
-    // calculate x and y axis angle (i.e. roll and pitch angles)
-    Vector3f vertical = Vector3f(0,0,-1);
-    trim_roll = scaled_accels_y.angle(vertical);
-    trim_pitch = scaled_accels_x.angle(vertical);
-
-    // angle call doesn't return the sign so take care of it here
-    if( scaled_accels_y.y > 0 ) {
-        trim_roll = -trim_roll;
-    }
-    if( scaled_accels_x.x < 0 ) {
-        trim_pitch = -trim_pitch;
-    }
-}
-
 #endif // __AVR_ATmega1280__
 
 // save parameters to eeprom
@@ -1265,3 +1336,40 @@ void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
     }
 }
 
+#if INS_VIBRATION_CHECK
+// calculate vibration levels and check for accelerometer clipping (called by a backends)
+void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
+{
+    // check for clipping
+    if (fabsf(accel.x) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
+        fabsf(accel.y) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
+        fabsf(accel.z) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS) {
+        _accel_clip_count[instance]++;
+    }
+
+    // calculate vibration on primary accel only
+    if (instance != _primary_accel) {
+        return;
+    }
+
+    // filter accel a 5hz
+    Vector3f accel_filt = _accel_vibe_floor_filter.apply(accel, dt);
+
+    // calc difference from this sample and 5hz filtered value, square and filter at 2hz
+    Vector3f accel_diff = (accel - accel_filt);
+    accel_diff.x *= accel_diff.x;
+    accel_diff.y *= accel_diff.y;
+    accel_diff.z *= accel_diff.z;
+    _accel_vibe_filter.apply(accel_diff, dt);
+}
+
+// retrieve latest calculated vibration levels
+Vector3f AP_InertialSensor::get_vibration_levels() const
+{
+    Vector3f vibe = _accel_vibe_filter.get();
+    vibe.x = safe_sqrt(vibe.x);
+    vibe.y = safe_sqrt(vibe.y);
+    vibe.z = safe_sqrt(vibe.z);
+    return vibe;
+}
+#endif

@@ -125,7 +125,6 @@ void LinuxScheduler::_microsleep(uint32_t usec)
 void LinuxScheduler::delay(uint16_t ms)
 {
     if (stopped_clock_usec) {
-        stopped_clock_usec += 1000UL*ms;
         return;
     }
     uint64_t start = millis64();
@@ -178,7 +177,6 @@ uint32_t LinuxScheduler::micros()
 void LinuxScheduler::delay_microseconds(uint16_t us)
 {
     if (stopped_clock_usec) {
-        stopped_clock_usec += us;
         return;
     }
     _microsleep(us);
@@ -252,7 +250,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
     }
     // now call the timer based drivers
     for (int i = 0; i < _num_timer_procs; i++) {
-        if (_timer_proc[i] != NULL) {
+        if (_timer_proc[i]) {
             _timer_proc[i]();
         }
     }
@@ -301,7 +299,7 @@ void LinuxScheduler::_run_io(void)
 
     // now call the IO based drivers
     for (int i = 0; i < _num_io_procs; i++) {
-        if (_io_proc[i] != NULL) {
+        if (_io_proc[i]) {
             _io_proc[i]();
         }
     }

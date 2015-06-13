@@ -64,7 +64,8 @@ enum aux_sw_func {
     AUXSW_LANDING_GEAR =        29, // Landing gear controller
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
-    AUXSW_MOTOR_INTERLOCK =     32  // Motor On/Off switch
+    AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
+    AUXSW_BRAKE =               33  // Brake flight mode
 };
 
 // Frame types
@@ -106,7 +107,7 @@ enum autopilot_modes {
     FLIP =         14,  // automatically flip the vehicle on the roll axis
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    STOP =         17   // full-stop using inertial/GPS system, no pilot input
+    BRAKE =        17   // full-brake using inertial/GPS system, no pilot input
 };
 
 // Tuning enumeration
@@ -194,11 +195,11 @@ enum GuidedMode {
 
 // RTL states
 enum RTLState {
-    InitialClimb,
-    ReturnHome,
-    LoiterAtHome,
-    FinalDescent,
-    Land
+    RTL_InitialClimb,
+    RTL_ReturnHome,
+    RTL_LoiterAtHome,
+    RTL_FinalDescent,
+    RTL_Land
 };
 
 // Flip states
@@ -251,7 +252,7 @@ enum FlipState {
 #define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_RCOUT                  (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
-#define MASK_LOG_PID                    (1<<12) // deprecated
+#define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
@@ -314,9 +315,6 @@ enum FlipState {
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
-
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
@@ -388,11 +386,10 @@ enum FlipState {
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
-// GPS Failsafe definitions (FS_GPS_ENABLE parameter)
-#define FS_GPS_DISABLED                     0       // GPS failsafe disabled
-#define FS_GPS_LAND                         1       // switch to LAND mode on GPS Failsafe
-#define FS_GPS_ALTHOLD                      2       // switch to ALTHOLD mode on GPS failsafe
-#define FS_GPS_LAND_EVEN_STABILIZE          3       // switch to LAND mode on GPS failsafe even if in a manual flight mode like Stabilize
+// EKF failsafe definitions (FS_EKF_ACTION parameter)
+#define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
+#define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
+#define FS_EKF_ACTION_LAND_EVEN_STABILIZE   3       // switch to Land mode on EKF failsafe even if in a manual flight mode like stabilize
 
 // for mavlink SET_POSITION_TARGET messages
 #define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1) | (1<<2))

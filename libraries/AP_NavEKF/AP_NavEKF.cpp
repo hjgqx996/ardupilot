@@ -55,7 +55,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    1E-06f
+#define GBIAS_PNOISE_DEFAULT    8E-06f
 #define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
@@ -79,7 +79,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.5f
-#define GBIAS_PNOISE_DEFAULT    1E-06f
+#define GBIAS_PNOISE_DEFAULT    8E-06f
 #define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
@@ -106,7 +106,7 @@ extern const AP_HAL::HAL& hal;
 #define STARTUP_WIND_SPEED 3.0f
 
 // initial imu bias uncertainty (deg/sec)
-#define INIT_GYRO_BIAS_UNCERTAINTY  0.1f
+#define INIT_GYRO_BIAS_UNCERTAINTY  1.0f
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // Define tuning parameters
@@ -526,8 +526,9 @@ bool NavEKF::InitialiseFilterDynamic(void)
         return false;
     }
 
-    // If the DCM solution has not converged, then don't initialise
-    if (_ahrs->get_error_rp() > 0.05f) {
+    // If the DCM solution has not converged, then don't initialise,
+    // unless at least 30s has passed
+    if (_ahrs->get_error_rp() > 0.05f && _ahrs->uptime_ms() < 30000U) {
         return false;
     }
 
@@ -3857,63 +3858,41 @@ void NavEKF::SetFlightAndFusionModes()
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
         float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
-        uint8_t inAirSum = 0;
-        bool highGndSpdStage2 = false;
+        bool highGndSpd = false;
+        bool highAirSpd = false;
+        bool largeHgtChange = false;
 
         // trigger at 8 m/s airspeed
         if (_ahrs->airspeed_sensor_enabled()) {
             const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
-                inAirSum++;
+            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
+                highAirSpd = true;
             }
         }
 
-        // this will trigger during change in baro height
-        if (fabsf(_baro.get_climb_rate()) > 0.5f) {
-
-            inAirSum++;
+        // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
+        if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
+            highGndSpd = true;
         }
 
-        // trigger at 3 m/s GPS velocity
-        if (gndSpdSq > 9.0f) {
-            inAirSum++;
+        // trigger if more than 10m away from initial height
+        if (fabsf(hgtMea) > 10.0f) {
+            largeHgtChange = true;
         }
 
-        // trigger at 6 m/s GPS velocity
-        if (gndSpdSq > 36.0f) {
-            highGndSpdStage2 = true;
-            inAirSum++;
-        }
-
-        // trigger at 9 m/s GPS velocity
-        if (gndSpdSq > 81.0f) {
-            inAirSum++;
-        }
-
-        // trigger if more than 15m away from initial height
-        if (fabsf(hgtMea) > 15.0f) {
-            inAirSum++;
-        }
-
-        // this will trigger due to air turbulence during flight
-        if (accNavMag > 0.5f) {
-            inAirSum++;
-        }
-
-        // if we on-ground then 4 or more out of 7 criteria are required to transition to the
-        // in-air mode and we also need enough GPS velocity to be able to calculate a reliable ground track heading
-        if (onGround && (inAirSum >= 4) && highGndSpdStage2) {
+        // to go to in-air mode we also need enough GPS velocity to be able to calculate a reliable ground track heading and either a lerge height or airspeed change
+        if (onGround && highGndSpd && (highAirSpd || largeHgtChange)) {
             onGround = false;
         }
         // if is possible we are in flight, set the time this condition was last detected
-        if (inAirSum >= 1) {
+        if (highGndSpd || highAirSpd || largeHgtChange) {
             airborneDetectTime_ms = imuSampleTime_ms;
         }
         // after 5 seconds of not detecting a possible flight condition, we transition to on-ground mode
         if(!onGround && ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
             onGround = true;
         }
-        // perform a yaw alignment check against GPS if exiting on-ground mode
+        // perform a yaw alignment check against GPS if exiting on-ground mode, bu tonly if we have enough ground speed
         // this is done to protect against unrecoverable heading alignment errors due to compass faults
         if (!onGround && prevOnGround) {
             alignYawGPS();
@@ -4185,6 +4164,8 @@ void NavEKF::readGpsData()
         } else if (goodToAlign){
             // Set the NE origin to the current GPS position
             setOrigin();
+            // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
+            alignMagStateDeclination();
             // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
             EKF_origin.alt = gpsloc.alt - hgtMea;
             // We are by definition at the origin at the instant of alignment so set NE position to zero
@@ -4419,10 +4400,10 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         // calculate initial Tbn matrix and rotate Mag measurements into NED
         // to set initial NED magnetic field states
         initQuat.rotation_matrix(Tbn);
-        initMagNED = Tbn * magData;
+        state.earth_magfield = Tbn * magData;
 
-        // write to earth magnetic field state vector
-        state.earth_magfield = initMagNED;
+        // align the NE earth magnetic field states with the published declination
+        alignMagStateDeclination();
 
         // clear bad magnetometer status
         badMag = false;
@@ -4823,6 +4804,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
+    status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime) < 4000;
 }
 
 // send an EKF_STATUS message to GCS
@@ -5203,5 +5185,19 @@ void NavEKF::getQuaternion(Quaternion& ret) const
 {
     ret = state.quat;
 }
+
+// align the NE earth magnetic field states with the published declination
+void NavEKF::alignMagStateDeclination()
+{
+    // get the magnetic declination
+    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+
+    // rotate the NE values so that the declination matches the published value
+    Vector3f initMagNED = state.earth_magfield;
+    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    state.earth_magfield.x = magLengthNE * cosf(magDecAng);
+    state.earth_magfield.y = magLengthNE * sinf(magDecAng);
+}
+
 
 #endif // HAL_CPU_CLASS

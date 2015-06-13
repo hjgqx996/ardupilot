@@ -37,8 +37,8 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    //for the hacky funciton pointer to gcs_send_text_p
-    typedef void (*gcs_send_t_p)(gcs_severity, const prog_char_t*);
+    // for the hacky function pointer to gcs_send_text_p
+    FUNCTOR_TYPEDEF(gcs_send_t_p, void, gcs_severity, const prog_char_t *);
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const enum HomeState &home_set, gcs_send_t_p);
@@ -50,7 +50,11 @@ public:
     bool rudder_arming_enabled();
     uint16_t get_enabled_checks();
 
-    bool pre_arm_checks(bool report);
+    /*
+      pre_arm_checks() is virtual so it can be modified
+      in a vehicle specific subclass
+    */
+    virtual bool pre_arm_checks(bool report);
     void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
 
     void set_logging_available(bool set) { logging_available = set; }
@@ -58,7 +62,7 @@ public:
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
     bool                                                armed:1;
     bool                                                logging_available:1;
     bool                                                skip_gyro_cal:1;

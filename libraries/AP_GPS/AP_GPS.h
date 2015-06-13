@@ -45,10 +45,11 @@
 #endif
 
 /**
- * save flash by skipping NMEA and SIRF support on ArduCopter on APM1/2 or any frame type on AVR1280 CPUs
+ * save flash by skipping NMEA and SIRF support on copter and plane
+ * for APM1/APM2
  */
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
-  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__))
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define GPS_SKIP_SIRF_NMEA
   #endif
 #endif
@@ -330,6 +331,7 @@ public:
     AP_Int8 _min_dgps;
     AP_Int16 _sbp_logmask;
     AP_Int8 _inject_to;
+    uint32_t _last_instance_swap_ms;
 #endif
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;

@@ -1,33 +1,32 @@
 # PX4 build is via external build system
 
 ifneq ($(PX4_ROOT),)
-
-# cope with relative paths
-ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
-PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
+$(error PX4_ROOT found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
-# check it is a valid PX4Firmware tree
-ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
-$(error ERROR: PX4_ROOT not set correctly - no nuttx-configs directory found)
+ifneq ($(NUTTX_SRC),)
+$(error NUTTX_SRC found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
+ifneq ($(UAVCAN_DIR),)
+$(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
+
+
+PX4_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4Firmware && pwd)
+NUTTX_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
+NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
+UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
+
+# warn if user has old PX4Firmware or PX4NuttX trees
+ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
+$(warning *** You have an old PX4Firmware tree - see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
+ifneq ($(wildcard $(SKETCHBOOK)/../PX4NuttX),)
+$(warning *** You have an old PX4NuttX tree - see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
 ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
-UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/../uavcan && pwd)/
-endif
-
-# default to PX4NuttX above the PX4Firmware tree
-ifeq ($(NUTTX_SRC),)
-NUTTX_SRC := $(shell cd $(PX4_ROOT)/../PX4NuttX/nuttx && pwd)/
-endif
-
-# cope with relative paths for NUTTX_SRC
-ifeq ($(wildcard $(NUTTX_SRC)/configs),)
-NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(NUTTX_SRC) && pwd)/
-endif
-
-ifeq ($(wildcard $(NUTTX_SRC)configs),)
-$(error ERROR: NUTTX_SRC not set correctly - no configs directory found)
+$(warning *** You have an old uavcan tree - see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
 NUTTX_GIT_VERSION := $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
@@ -35,9 +34,7 @@ PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
 EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
-ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
 EXTRAFLAGS += -DUAVCAN=1
-endif
 
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
@@ -53,7 +50,7 @@ export GIT_SUBMODULES_ARE_EVIL = 1
 PYTHONPATH=$(SKETCHBOOK)/mk/PX4/Tools/genmsg/src:$(SKETCHBOOK)/mk/PX4/Tools/gencpp/src
 export PYTHONPATH
 
-PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
+PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
 PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os" 
 
 HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
@@ -64,34 +61,34 @@ endif
 ifneq ($(wildcard $(NUTTX_SRC)/..),)
 HASHADDER_FLAGS += --nuttx "$(NUTTX_SRC)/.."
 endif
-ifneq ($(wildcard $(UAVCAN_DIR)),)
 HASHADDER_FLAGS += --uavcan "$(UAVCAN_DIR)"
-endif
 
 .PHONY: module_mk
 module_mk:
+	$(v) echo "Building $(SKETCHBOOK)/module.mk"
 	$(RULEHDR)
 	$(v) echo "# Auto-generated file - do not edit" > $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $(SKETCHBOOK)/module.mk.new
-	$(v) echo "SRCS = Build.$(SKETCH)/$(SKETCH).cpp $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "SRCS = $(wildcard $(SRCROOT)/*.cpp) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1200" >> $(SKETCHBOOK)/module.mk.new
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
-px4-v1: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
-	$(v) cp $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v1.px4" "$(SKETCH)-v1.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
-px4-v2: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
-	$(v) cp $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
@@ -100,11 +97,12 @@ px4-v2: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCP
 
 px4: px4-v1 px4-v2
 
-px4-clean: clean px4-archives-clean
+px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
 px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
+	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
 
 px4-v1-upload: px4-v1
 	$(RULEHDR)
@@ -165,13 +163,3 @@ $(PX4_ROOT)/Archives/px4io-v2.export:
 px4-archives:
 	$(v) $(PX4_MAKE_ARCHIVES)
 
-else
-
-px4:
-	$(error ERROR: You need to add PX4_ROOT to your config.mk)
-
-px4-clean: px4
-
-px4-upload: px4
-
-endif
