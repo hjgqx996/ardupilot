@@ -180,7 +180,17 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
     _shared_data_idx(0),
     _accel_filter(1000, 15),
     _gyro_filter(1000, 15),
-    _have_sample_available(false)
+    _have_sample_available(false),
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    _default_rotation(ROTATION_ROLL_180_YAW_270)
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    /* no rotation needed */
+    _default_rotation(ROTATION_NONE)
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    _default_rotation(ROTATION_YAW_270)
+#else /* rotate for bbone default (and other boards) */
+    _default_rotation(ROTATION_ROLL_180_YAW_90)
+#endif
 {
 }
 
@@ -237,6 +247,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
             _spi_sem->give();
         }
         if (tries++ > 5) {
+            hal.console->printf("MPU9250: 5 unsuccessful attempts to initialize\n");
             return false;
         }
     } while (1);
@@ -272,23 +283,8 @@ bool AP_InertialSensor_MPU9250::update( void )
     accel *= MPU9250_ACCEL_SCALE_1G;
     gyro *= GYRO_SCALE;
 
-    // rotate for bbone default
-    accel.rotate(ROTATION_ROLL_180_YAW_90);
-    gyro.rotate(ROTATION_ROLL_180_YAW_90);
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-    // PXF has an additional YAW 180
-    accel.rotate(ROTATION_YAW_180);
-    gyro.rotate(ROTATION_YAW_180);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    // NavIO has different orientation, assuming RaspberryPi is right
-    // way up, and PWM pins on NavIO are at the back of the aircraft
-    accel.rotate(ROTATION_ROLL_180_YAW_90);
-    gyro.rotate(ROTATION_ROLL_180_YAW_90);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    accel.rotate(ROTATION_ROLL_180);
-    gyro.rotate(ROTATION_ROLL_180);
-#endif
+    accel.rotate(_default_rotation);
+    gyro.rotate(_default_rotation);
 
     _publish_gyro(_gyro_instance, gyro);
     _publish_accel(_accel_instance, accel);
@@ -421,7 +417,13 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
+        // reset device
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+
         hal.scheduler->delay(100);
+
+        // disable I2C as recommended by the datasheet
+        _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
         // Wake up device and select GyroZ clock. Note that the
         // MPU6000 starts up in sleep mode, and it can take some time
