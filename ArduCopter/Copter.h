@@ -367,7 +367,7 @@ private:
     float target_sonar_alt;      // desired altitude in cm above the ground
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
-    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land detector test
+    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
@@ -580,7 +580,7 @@ private:
     void gcs_check_input(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
     void do_erase_logs(void);
-    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp);
+    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
@@ -601,6 +601,9 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+#if FRAME_CONFIG == HELI_FRAME
+    void Log_Write_Heli(void);
+#endif
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
@@ -792,6 +795,7 @@ private:
     void read_inertia();
     void read_inertial_altitude();
     bool land_complete_maybe();
+    void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
     void landinggear_update();
@@ -876,6 +880,7 @@ private:
     void init_ardupilot();
     void startup_ground(bool force_gyro_cal);
     bool position_ok();
+    bool ekf_position_ok();
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);

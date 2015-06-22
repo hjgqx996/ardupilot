@@ -112,31 +112,21 @@ public:
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
     const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
-    void               set_gyro(uint8_t instance, const Vector3f &gyro);
 
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
     //get delta angle if available
-    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
-        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
-        return _delta_angle_valid[i];
-    }
-
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const;
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
 
     //get delta velocity if available
-    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
-        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
-        return _delta_velocity_valid[i];
-    }
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
     bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
 
-    float get_delta_velocity_dt(uint8_t i) const {
-        return _delta_velocity_dt[i];
-    }
-    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
+    float get_delta_velocity_dt(uint8_t i) const;
+    float get_delta_velocity_dt() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
@@ -144,7 +134,6 @@ public:
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }
-    void               set_accel(uint8_t instance, const Vector3f &accel);
 
     uint32_t get_gyro_error_count(uint8_t i) const { return _gyro_error_count[i]; }
     uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
@@ -232,6 +221,17 @@ public:
     // retrieve and clear accelerometer clipping count
     uint32_t get_accel_clip_count(uint8_t instance) const;
 #endif
+
+    /*
+      HIL set functions. The minimum for HIL is set_accel() and
+      set_gyro(). The others are option for higher fidelity log
+      playback
+     */
+    void set_accel(uint8_t instance, const Vector3f &accel);
+    void set_gyro(uint8_t instance, const Vector3f &gyro);
+    void set_delta_time(float delta_time);
+    void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
+    void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
 private:
 
@@ -346,6 +346,13 @@ private:
     LowPassFilterVector3f _accel_vibe_floor_filter;
     LowPassFilterVector3f _accel_vibe_filter;
 #endif
+
+    /*
+      state for HIL support
+     */
+    struct {
+        float delta_time;
+    } _hil {};
 
     DataFlash_Class *_dataflash;
 };

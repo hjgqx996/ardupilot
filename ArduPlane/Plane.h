@@ -434,6 +434,15 @@ private:
         // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
 
+        // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
+        // are we in idle mode? used for balloon launch to stop servo
+        // movement until altitude is reached
+        bool idle_mode:1;
+
+        // used to 'wiggle' servos in idle mode to prevent them freezing
+        // at high altitudes
+        uint8_t idle_wiggle_stage;
+
         // Altitude threshold to complete a takeoff command in autonomous
         // modes.  Centimeters above home
         int32_t takeoff_altitude_rel_cm;
@@ -452,7 +461,7 @@ private:
         float next_turn_angle {90};
 
         // filtered sink rate for landing
-        float land_sink_rate;
+        float sink_rate;
 
         // time when we first pass min GPS speed on takeoff
         uint32_t takeoff_speed_time_ms;
@@ -556,19 +565,19 @@ private:
     const struct Location &home = ahrs.get_home();
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set;
+    enum HomeState home_is_set = HOME_UNSET;
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-    Location prev_WP_loc;
+    Location prev_WP_loc {};
 
     // The plane's current location
-    struct Location current_loc;
+    struct Location current_loc {};
 
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-    Location next_WP_loc;
+    Location next_WP_loc {};
 
     // The location of the active waypoint in Guided mode.
-    struct Location guided_WP_loc;
+    struct Location guided_WP_loc {};
 
     // special purpose command used only after mission completed to return vehicle to home or rally point
     struct AP_Mission::Mission_Command auto_rtl_command;
@@ -594,7 +603,7 @@ private:
         // lookahead value for height error reporting
         float lookahead;
 #endif
-    } target_altitude;
+    } target_altitude {};
 
     // INS variables
     // The main loop execution time.  Seconds
@@ -603,21 +612,21 @@ private:
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    uint32_t perf_mon_timer;
+    uint32_t perf_mon_timer = 0;
 
     // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
-    uint32_t G_Dt_max;
-    uint32_t G_Dt_min;
+    uint32_t G_Dt_max = 0;
+    uint32_t G_Dt_min = 0;
 
     // System Timers
     // Time in microseconds of start of main control loop
-    uint32_t fast_loopTimer_us;
+    uint32_t fast_loopTimer_us = 0;
 
     // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop;
+    uint32_t delta_us_fast_loop = 0;
 
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
+    uint16_t mainLoop_count = 0;
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
@@ -634,13 +643,13 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    bool demoing_servos;
+    bool demoing_servos = false;
 
     // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
+    bool in_mavlink_delay = false;
 
     // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
+    bool gcs_out_of_time = false;
 
 
     void demo_servos(uint8_t i);
@@ -730,6 +739,7 @@ private:
     bool verify_wait_delay();
     bool verify_change_alt();
     bool verify_within_distance();
+    bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     void do_take_picture();
     void log_picture();
@@ -741,6 +751,7 @@ private:
     void reset_control_switch();
     void autotune_start(void);
     void autotune_restore(void);
+    void autotune_enable(bool enable);
     bool fly_inverted(void);
     void failsafe_short_on_event(enum failsafe_state fstype);
     void failsafe_long_on_event(enum failsafe_state fstype);
@@ -852,6 +863,7 @@ private:
     void terrain_update(void);
     void update_flight_mode(void);
     void stabilize();
+    void set_servos_idle(void);
     void set_servos();
     void update_aux();
     void determine_is_flying(void);
@@ -891,6 +903,7 @@ private:
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);

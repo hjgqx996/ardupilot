@@ -20,7 +20,7 @@
 #ifndef _ROVER_H_
 #define _ROVER_H_
 
-#define THISFIRMWARE "ArduRover v2.49"
+#define THISFIRMWARE "ArduRover v2.50"
 
 #include <math.h>
 #include <stdarg.h>
@@ -393,6 +393,7 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
+    void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_statustext(mavlink_channel_t chan);

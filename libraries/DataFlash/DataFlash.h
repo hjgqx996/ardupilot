@@ -67,6 +67,7 @@ public:
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
+    void Log_Write_IMUDT(const AP_InertialSensor &ins);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
@@ -225,6 +226,14 @@ struct PACKED log_IMU {
     uint32_t gyro_error, accel_error;
     float temperature;
     uint8_t gyro_health, accel_health;
+};
+
+struct PACKED log_IMUDT {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float delta_time, delta_vel_dt;
+    float delta_ang_x, delta_ang_y, delta_ang_z;
+    float delta_vel_x, delta_vel_y, delta_vel_z;
 };
 
 struct PACKED log_Vibe {
@@ -717,8 +726,13 @@ Format characters in the format string for binary log messages
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }
-
+      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
+    { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
+      "IMT","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+    { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
+      "IMT2","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+    { LOG_IMUDT3_MSG, sizeof(log_IMUDT), \
+      "IMT3","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -726,65 +740,70 @@ Format characters in the format string for binary log messages
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES
 #endif
 
-// message types 0 to 100 reversed for vehicle specific use
+// message types 0 to 128 reversed for vehicle specific use
 
 // message types for common messages
-#define LOG_FORMAT_MSG	  128
-#define LOG_PARAMETER_MSG 129
-#define LOG_GPS_MSG		  130
-#define LOG_IMU_MSG		  131
-#define LOG_MESSAGE_MSG	  132
-#define LOG_RCIN_MSG      133
-#define LOG_RCOUT_MSG     134
-#define LOG_IMU2_MSG	  135
-#define LOG_BARO_MSG	  136
-#define LOG_POWR_MSG	  137
-#define LOG_AHR2_MSG	  138
-#define LOG_SIMSTATE_MSG  139
-#define LOG_EKF1_MSG      140
-#define LOG_EKF2_MSG      141
-#define LOG_EKF3_MSG      142
-#define LOG_EKF4_MSG      143
-#define LOG_GPS2_MSG	  144
-#define LOG_CMD_MSG       145
-#define LOG_RADIO_MSG	  146
-#define LOG_ATRP_MSG      147
-#define LOG_CAMERA_MSG    148
-#define LOG_IMU3_MSG	  149
-#define LOG_TERRAIN_MSG   150
-#define LOG_UBX1_MSG      151
-#define LOG_UBX2_MSG      152
-#define LOG_UBX3_MSG      153
-#define LOG_ESC1_MSG      154
-#define LOG_ESC2_MSG      155
-#define LOG_ESC3_MSG      156
-#define LOG_ESC4_MSG      157
-#define LOG_ESC5_MSG      158
-#define LOG_ESC6_MSG      159
-#define LOG_ESC7_MSG      160
-#define LOG_ESC8_MSG      161
-#define LOG_EKF5_MSG      162
-#define LOG_BAR2_MSG	  163
-#define LOG_ARSP_MSG      164
-#define LOG_ATTITUDE_MSG  165
-#define LOG_CURRENT_MSG   166
-#define LOG_COMPASS_MSG   167
-#define LOG_COMPASS2_MSG  168
-#define LOG_COMPASS3_MSG  169
-#define LOG_MODE_MSG      170
-#define LOG_GPS_RAW_MSG   171
-#define LOG_ACC1_MSG      172
-#define LOG_ACC2_MSG      173
-#define LOG_ACC3_MSG      174
-#define LOG_GYR1_MSG      175
-#define LOG_GYR2_MSG      176
-#define LOG_GYR3_MSG      177
-#define LOG_POS_MSG       178
-#define LOG_PIDR_MSG      179
-#define LOG_PIDP_MSG      180
-#define LOG_PIDY_MSG      181
-#define LOG_PIDA_MSG      182
-#define LOG_VIBE_MSG      183
+enum LogMessages {
+    LOG_FORMAT_MSG = 128,
+    LOG_PARAMETER_MSG,
+    LOG_GPS_MSG,
+    LOG_IMU_MSG,
+    LOG_MESSAGE_MSG,
+    LOG_RCIN_MSG,
+    LOG_RCOUT_MSG,
+    LOG_IMU2_MSG,
+    LOG_BARO_MSG,
+    LOG_POWR_MSG,
+    LOG_AHR2_MSG,
+    LOG_SIMSTATE_MSG,
+    LOG_EKF1_MSG,
+    LOG_EKF2_MSG,
+    LOG_EKF3_MSG,
+    LOG_EKF4_MSG,
+    LOG_GPS2_MSG,
+    LOG_CMD_MSG,
+    LOG_RADIO_MSG,
+    LOG_ATRP_MSG,
+    LOG_CAMERA_MSG,
+    LOG_IMU3_MSG,
+    LOG_TERRAIN_MSG,
+    LOG_UBX1_MSG,
+    LOG_UBX2_MSG,
+    LOG_UBX3_MSG,
+    LOG_ESC1_MSG,
+    LOG_ESC2_MSG,
+    LOG_ESC3_MSG,
+    LOG_ESC4_MSG,
+    LOG_ESC5_MSG,
+    LOG_ESC6_MSG,
+    LOG_ESC7_MSG,
+    LOG_ESC8_MSG,
+    LOG_EKF5_MSG,
+    LOG_BAR2_MSG,
+    LOG_ARSP_MSG,
+    LOG_ATTITUDE_MSG,
+    LOG_CURRENT_MSG,
+    LOG_COMPASS_MSG,
+    LOG_COMPASS2_MSG,
+    LOG_COMPASS3_MSG,
+    LOG_MODE_MSG,
+    LOG_GPS_RAW_MSG,
+    LOG_ACC1_MSG,
+    LOG_ACC2_MSG,
+    LOG_ACC3_MSG,
+    LOG_GYR1_MSG,
+    LOG_GYR2_MSG,
+    LOG_GYR3_MSG,
+    LOG_POS_MSG,
+    LOG_PIDR_MSG,
+    LOG_PIDP_MSG,
+    LOG_PIDY_MSG,
+    LOG_PIDA_MSG,
+    LOG_VIBE_MSG,
+    LOG_IMUDT_MSG,
+    LOG_IMUDT2_MSG,
+    LOG_IMUDT3_MSG
+};
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

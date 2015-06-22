@@ -239,6 +239,7 @@ enum FlipState {
 #define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
+#define LOG_HELI_MSG                    0x20
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -312,6 +313,8 @@ enum FlipState {
 #define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
+#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
+#define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -354,7 +357,7 @@ enum FlipState {
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- autotune
-#define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
+
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
 #define ERROR_CODE_PARACHUTE_LANDED         3
