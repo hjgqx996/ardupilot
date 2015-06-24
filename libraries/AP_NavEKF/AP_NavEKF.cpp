@@ -134,6 +134,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
+    // @Units: meters
     AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
 
     // @Param: ALT_NOISE
@@ -142,6 +143,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
+    // @Units: meters
     AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
@@ -158,6 +160,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.5 5.0
     // @Increment: 0.1
     // @User: Advanced
+    // @Units: m/s
     AP_GROUPINFO("EAS_NOISE",    5, NavEKF, _easNoise, 1.4f),
 
     // @Param: WIND_PNOISE
@@ -182,6 +185,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.001 0.05
     // @Increment: 0.001
     // @User: Advanced
+    // @Units: rad/s
     AP_GROUPINFO("GYRO_PNOISE",    8, NavEKF, _gyrNoise, GYRO_PNOISE_DEFAULT),
 
     // @Param: ACC_PNOISE
@@ -190,6 +194,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 1.0
     // @Increment: 0.01
     // @User: Advanced
+    // @Units: m/s/s
     AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
@@ -197,6 +202,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.0000001 0.00001
     // @User: Advanced
+    // @Units: rad/s
     AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
@@ -204,6 +210,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
+    // @Units: m/s/s
     AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAGE_PNOISE
@@ -211,6 +218,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 0.01
     // @User: Advanced
+    // @Units: gauss/s
     AP_GROUPINFO("MAGE_PNOISE",    12, NavEKF, _magEarthProcessNoise, MAGE_PNOISE_DEFAULT),
 
     // @Param: MAGB_PNOISE
@@ -218,6 +226,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This noise controls the growth of body magnetic field state error estimates. Increasing it makes compass offset estimation faster and noisier.
     // @Range: 0.0001 0.01
     // @User: Advanced
+    // @Units: gauss/s
     AP_GROUPINFO("MAGB_PNOISE",    13, NavEKF, _magBodyProcessNoise, MAGB_PNOISE_DEFAULT),
 
     // @Param: VEL_DELAY
@@ -226,6 +235,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0 500
     // @Increment: 10
     // @User: Advanced
+    // @Units: milliseconds
     AP_GROUPINFO("VEL_DELAY",    14, NavEKF, _msecVelDelay, 220),
 
     // @Param: POS_DELAY
@@ -234,13 +244,13 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0 500
     // @Increment: 10
     // @User: Advanced
+    // @Units: milliseconds
     AP_GROUPINFO("POS_DELAY",    15, NavEKF, _msecPosDelay, 220),
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
     // @Description: This parameter controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = use no GPS (optical flow will be used if available)
-    // @Range: 0 3
-    // @Increment: 1
+    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS use optical flow
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",    16, NavEKF, _fusionModeGPS, 0),
 
@@ -288,7 +298,6 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @DisplayName: Magnetometer calibration mode
     // @Description: EKF_MAG_CAL = 0 enables calibration based on flying speed and altitude and is the default setting for Plane users. EKF_MAG_CAL = 1 enables calibration based on manoeuvre level and is the default setting for Copter and Rover users. EKF_MAG_CAL = 2 prevents magnetometer calibration regardless of flight condition and is recommended if in-flight magnetometer calibration is unreliable.
     // @Values: 0:Speed and Height,1:Acceleration,2:Never,3:Always
-    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, MAG_CAL_DEFAULT),
 
@@ -306,6 +315,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: meters
     AP_GROUPINFO("GLITCH_RAD",    24, NavEKF, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // @Param: GND_GRADIENT
@@ -313,7 +323,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This parameter sets the RMS terrain gradient percentage assumed by the terrain height estimation. Terrain height can be estimated using optical flow and/or range finder sensor data if fitted. Smaller values cause the terrain height estimate to be slower to respond to changes in measurement. Larger values casue the terrain height estimate to be faster to respond, but also more noisy. Generally this value can be reduced if operating over very flat terrain and increased if operating over uneven terrain.
     // @Range: 1 - 50
     // @Increment: 1
-    // @User: advanced
+    // @User: Advanced
     AP_GROUPINFO("GND_GRADIENT",    25, NavEKF, _gndGradientSigma, 2),
 
     // @Param: FLOW_NOISE
@@ -321,7 +331,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.05 - 1.0
     // @Increment: 0.05
-    // @User: advanced
+    // @User: Advanced
+    // @Units: rad/s
     AP_GROUPINFO("FLOW_NOISE",    26, NavEKF, _flowNoise, FLOW_NOISE_DEFAULT),
 
     // @Param: FLOW_GATE
@@ -329,7 +340,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This parameter sets the number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 1 - 100
     // @Increment: 1
-    // @User: advanced
+    // @User: Advanced
     AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, FLOW_GATE_DEFAULT),
 
     // @Param: FLOW_DELAY
@@ -337,7 +348,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
     // @Range: 0 - 500
     // @Increment: 10
-    // @User: advanced
+    // @User: Advanced
+    // @Units: milliseconds
     AP_GROUPINFO("FLOW_DELAY",    28, NavEKF, _msecFLowDelay, FLOW_MEAS_DELAY),
 
     // @Param: RNG_GATE
@@ -345,7 +357,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This parameter sets the number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 1 - 100
     // @Increment: 1
-    // @User: advanced
+    // @User: Advanced
     AP_GROUPINFO("RNG_GATE",    29, NavEKF, _rngInnovGate, 5),
 
     // @Param: MAX_FLOW
@@ -353,7 +365,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This parameter sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
     // @Range: 1.0 - 4.0
     // @Increment: 0.1
-    // @User: advanced
+    // @User: Advanced
     AP_GROUPINFO("MAX_FLOW",    30, NavEKF, _maxFlowRate, 2.5f),
 
     // @Param: FALLBACK
@@ -3690,6 +3702,34 @@ void NavEKF::resetGyroBias(void)
 
 }
 
+// Reset the baro so that it reads zero at the current height
+// Reset the EKF height to zero
+// Adjust the EKf origin height so that the EKF height + origin height is the same as before
+// Return true if the height datum reset has been performed
+// If using a range finder for height do not reset and return false
+bool NavEKF::resetHeightDatum(void)
+{
+    // if we are using a range finder for height, return false
+    if (_altSource == 1) {
+        return false;
+    }
+    // record the old height estimate
+    float oldHgt = -state.position.z;
+    // reset the barometer so that it reads zero at the current height
+    _baro.update_calibration();
+    // reset the height state
+    state.position.z = 0.0f;
+    // reset the stored height states from previous time steps
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position.z = state.position.z;
+    }
+    // adjust the height of the EKF origin so that the origin plus baro height before and afer the reset is the same
+    if (validOrigin) {
+        EKF_origin.alt += oldHgt*100;
+    }
+    return true;
+}
+
 // Commands the EKF to not use GPS.
 // This command must be sent prior to arming
 // This command is forgotten by the EKF each time the vehicle disarms
@@ -4385,6 +4425,14 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
         // otherwise use existing heading
         if (!badMag) {
+            // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
+            Vector3f tempEuler;
+            state.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
+            yawResetAngle = wrap_PI(yaw - tempEuler.z);
+            // set the flag to indicate that an in-flight yaw reset has been performed
+            // this will be cleared when the reset value is retrieved
+            yawResetAngleWaiting = true;
+            // calculate an initial quaternion using the new yaw value
             initQuat.from_euler(roll, pitch, yaw);
         } else {
             initQuat = state.quat;
@@ -4639,6 +4687,8 @@ void NavEKF::InitialiseVariables()
     gpsAidingBad = false;
     highYawRate = false;
     yawRateFilt = 0.0f;
+    yawResetAngle = 0.0f;
+    yawResetAngleWaiting = false;
 }
 
 // return true if we should use the airspeed sensor
@@ -5190,6 +5240,21 @@ void NavEKF::alignMagStateDeclination()
     float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
     state.earth_magfield.x = magLengthNE * cosf(magDecAng);
     state.earth_magfield.y = magLengthNE * sinf(magDecAng);
+}
+
+// return the amount of yaw angle change due to the last yaw angle reset in radians
+// returns true if a reset yaw angle has been updated and not queried
+// this function should not have more than one client
+bool NavEKF::getLastYawResetAngle(float &yawAng)
+{
+    if (yawResetAngleWaiting) {
+        yawAng = yawResetAngle;
+        yawResetAngleWaiting = false;
+        return true;
+    } else {
+        yawAng = yawResetAngle;
+        return false;
+    }
 }
 
 

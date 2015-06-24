@@ -122,6 +122,13 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
+    // Resets the baro so that it reads zero at the current height
+    // Resets the EKF height to zero
+    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Returns true if the height datum reset has been performed
+    // If using a range finder for height no reset is performed and it returns false
+    bool resetHeightDatum(void);
+
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
     // This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
@@ -254,6 +261,11 @@ public:
     // provides the quaternion that was used by the INS calculation to rotate from the previous orientation to the orientaion at the current time step
     // returns a zero rotation quaternion if the INS calculation was not performed on that time step.
     Quaternion getDeltaQuaternion(void) const;
+
+    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // returns true if a reset yaw angle has been updated and not queried
+    // this function should not have more than one client
+    bool getLastYawResetAngle(float &yawAng);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -668,6 +680,8 @@ private:
     bool highYawRate;               // true when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
+    float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
+    bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
