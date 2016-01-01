@@ -52,6 +52,12 @@ public:
 
 
         k_param_land_deepstall,
+        k_param_deepstall_hdg,
+        k_param_deepstall_elev,
+        k_param_deepstall_Ki,
+        k_param_deepstall_Kd,
+
+
 
         // Misc
         //
@@ -287,6 +293,10 @@ public:
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,
 
+        // 205: Deepstall landing paramters
+        k_param_deepstall_Kyr,
+        k_param_deepstall_Kp,
+
         //
         // 210: flight modes
         //
@@ -298,6 +308,9 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_initial_mode,
+
+        k_param_deepstall_yrlimit,
+        k_param_deepstall_ilimit,
 
         //
         // 220: Waypoint data
@@ -516,6 +529,14 @@ public:
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;
     AP_Int8 land_deepstall;
+    AP_Float deepstall_hdg;
+    AP_Int16 deepstall_elev;
+    AP_Float deepstall_Kyr;
+    AP_Float deepstall_Kp;
+    AP_Float deepstall_Ki;
+    AP_Float deepstall_Kd;
+    AP_Float deepstall_ilimit;
+    AP_Float deepstall_yrlimit;
 
     // RC channels
     RC_Channel rc_1;

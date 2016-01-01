@@ -108,6 +108,9 @@
 #include <SITL/SITL.h>
 #endif
 
+// Deepstall landing
+#include "deepstall.h"
+
 /*
   a plane specific arming class
  */
@@ -570,6 +573,8 @@ private:
 #if PARACHUTE == ENABLED
     AP_Parachute parachute {relay};
 #endif
+
+    DeepStall *deepstall_control;
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE

@@ -1,7 +1,5 @@
 #!/bin/sh
 
-AUTOTESTDIR=$(dirname $0)
-
 nice fgfs \
     --native-fdm=socket,in,10,,5503,udp \
     --fdm=external \
