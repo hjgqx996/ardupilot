@@ -351,6 +351,9 @@ public:
 
         k_param_deepstall_lat,
         k_param_deepstall_lng,
+        k_param_deepstall_pKp,
+        k_param_deepstall_pKi,
+        k_param_deepstall_pKd,
 
         k_param_DataFlash = 253, // Logging Group
 
@@ -543,6 +546,11 @@ public:
     
     AP_Float deepstall_lat;
     AP_Float deepstall_lng;
+    
+    AP_Float deepstall_pKp;
+    AP_Float deepstall_pKi;
+    AP_Float deepstall_pKd;
+    AP_Float deepstall_pilimit;
 
     // RC channels
     RC_Channel rc_1;
