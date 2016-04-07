@@ -48,22 +48,22 @@ bool Plane::verify_land()
         mission.read_cmd_from_storage(current_index, cmd);
 
         // Runs once to set-up the deepstall
-        if (!deepstall_control->ready) {
+        if (!deepstall_control.ready) {
             // Recompute when closer to the target waypoint
             if (cmd.p1 == 0) {
-                deepstall_control->setTargetHeading(atan2(-ahrs.wind_estimate().y, -ahrs.wind_estimate().x)*180/M_PI, false);
+                deepstall_control.setTargetHeading(atan2(-ahrs.wind_estimate().y, -ahrs.wind_estimate().x)*180/M_PI, false);
             } else {
-                deepstall_control->setTargetHeading(cmd.p1, false);
+                deepstall_control.setTargetHeading(cmd.p1, false);
             }
             
             // Compute approach path (waypoints) for each stage of the deepstall
-            deepstall_control->computeApproachPath(ahrs.wind_estimate(), 120, g.deepstall_ds, g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, next_WP_loc, cmd.p1);
+            deepstall_control.computeApproachPath(ahrs.wind_estimate(), 120, g.deepstall_ds, g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, next_WP_loc, cmd.p1);
             
-            deepstall_control->ready = true; // Set ready flag - only reset on abort
+            deepstall_control.ready = true; // Set ready flag - only reset on abort
         }
         
         // Set deepstall target and parameters
-        deepstall_control->setYRCParams(g.deepstall_Kyr, g.deepstall_yrlimit, g.deepstall_Kp, g.deepstall_Ki, g.deepstall_Kd, g.deepstall_ilimit);
+        deepstall_control.setYRCParams(g.deepstall_Kyr, g.deepstall_yrlimit, g.deepstall_Kp, g.deepstall_Ki, g.deepstall_Kd, g.deepstall_ilimit);
         
         Location target {};
         memcpy(&target, &next_WP_loc, sizeof(Location));
@@ -71,7 +71,7 @@ bool Plane::verify_land()
          
         // Retrieve current approach path waypoint (or if false returned, land)
 //        if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-            switch (deepstall_control->getApproachWaypoint(target, next_WP_loc, current_loc, ahrs.wind_estimate(), g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, gps.ground_course_cd(), nav_controller, g.loiter_radius, cmd.p1)) {
+            switch (deepstall_control.getApproachWaypoint(target, next_WP_loc, current_loc, ahrs.wind_estimate(), g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, gps.ground_course_cd(), nav_controller, g.loiter_radius, cmd.p1)) {
                 case DEEPSTALL_FLY_TO_LOITER:
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
                     nav_controller->update_waypoint(current_loc, target);
@@ -82,12 +82,12 @@ bool Plane::verify_land()
                     break;
                 case DEEPSTALL_APPROACH:
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
-                    nav_controller->update_waypoint(deepstall_control->loiter_exit, target);
+                    nav_controller->update_waypoint(deepstall_control.loiter_exit, target);
                     break;
                 case DEEPSTALL_LAND:
-                    nav_controller->update_waypoint(deepstall_control->loiter_exit, target);
+                    nav_controller->update_waypoint(deepstall_control.loiter_exit, target);
                     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-                        deepstall_control->deepstall_start_time = AP_HAL::millis();
+                        deepstall_control.deepstall_start_time = AP_HAL::millis();
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
                     }
                     break;
@@ -340,7 +340,7 @@ bool Plane::restart_landing_sequence()
 
     update_flight_stage();
     // reset internal deepstall logic
-    deepstall_control->abort();
+    deepstall_control.abort();
 
     return success;
 }

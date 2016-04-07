@@ -574,7 +574,7 @@ private:
     AP_Parachute parachute {relay};
 #endif
 
-    DeepStall *deepstall_control;
+    DeepStall deepstall_control;
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE

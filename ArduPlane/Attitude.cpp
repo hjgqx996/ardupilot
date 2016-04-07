@@ -900,7 +900,7 @@ void Plane::set_servos(void)
 
             channel_roll->calc_pwm();
             if (g.land_deepstall > 0 && control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-                float slew_progress_unclamped = (AP_HAL::millis() - deepstall_control->deepstall_start_time) / g.deepstall_slew_speed;
+                float slew_progress_unclamped = (AP_HAL::millis() - deepstall_control.deepstall_start_time) / g.deepstall_slew_speed;
                 float slew_progress_clamped = CLAMP(slew_progress_unclamped, 0.0f, 1.0f);
                 float l_airspeed;
                 ahrs.airspeed_estimate(&l_airspeed);
@@ -912,7 +912,7 @@ void Plane::set_servos(void)
                 if (slew_progress_unclamped >= g.deepstall_settle ||
                     (l_airspeed <= g.deepstall_accel) ||
                     ((g.deepstall_descent != 0.0) && (ned_3[2] > g.deepstall_descent))) {
-                    deepstall_control->land(ahrs.yaw, ahrs.get_gyro().z, current_loc, g.deepstall_l1, g.deepstall_yaw_limit);
+                    deepstall_control.land(ahrs.yaw, ahrs.get_gyro().z, current_loc, g.deepstall_l1, g.deepstall_yaw_limit);
                     uint16_t rudderLimit;
                     if (l_airspeed > 12.0f) {
                         rudderLimit = 0.5f;
@@ -921,7 +921,7 @@ void Plane::set_servos(void)
                     } else {
                         rudderLimit = (12.0f - l_airspeed) / 6.0f + 0.5f;
                     }
-                    channel_rudder->servo_out = constrain_int16(deepstall_control->getRudderNorm()*4500, - (4500 * rudderLimit), (4500 * rudderLimit));
+                    channel_rudder->servo_out = constrain_int16(deepstall_control.getRudderNorm()*4500, - (4500 * rudderLimit), (4500 * rudderLimit));
                 }
             } else {
                 channel_pitch->calc_pwm();
