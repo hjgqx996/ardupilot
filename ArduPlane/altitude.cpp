@@ -34,7 +34,7 @@ void Plane::adjust_altitude_target()
         // in land final TECS uses TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
-    } else if (g.land_deepstall == 0 &&
+    } else if (deepstall_control.enable == 0 &&
                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
         setup_landing_glide_slope();
@@ -359,7 +359,7 @@ void Plane::set_offset_altitude_location(const Location &loc)
     }
 #endif
 
-    if (g.land_deepstall > 0 || // deepstall means always do the resets
+    if (deepstall_control.enable > 0 || // deepstall means always do the resets
         (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
          flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
          flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL)) {

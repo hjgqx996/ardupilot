@@ -87,9 +87,9 @@ void Plane::calc_airspeed_errors()
     float aspeed_cm = airspeed.get_airspeed_cm();
 
 
-    if (g.land_deepstall > 0.0f && (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+    if (deepstall_control.enable > 0 && (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
                                     flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL)) {
-        target_airspeed_cm = g.deepstall_approach_airspeed_cm;
+        target_airspeed_cm = deepstall_control.approach_airspeed_cm;
     } else {
         // Normal airspeed target
         target_airspeed_cm = g.airspeed_cruise_cm;

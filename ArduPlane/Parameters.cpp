@@ -1081,25 +1081,6 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
-    GSCALAR(land_deepstall, "LAND_DEEPSTALL", 0),
-    GSCALAR(deepstall_elev, "DEEPSTALL_ELEV", 1203),
-    GSCALAR(deepstall_Kp, "DEEPSTALL_KP", 6),
-    GSCALAR(deepstall_Ki, "DEEPSTALL_KI", 0.1),
-    GSCALAR(deepstall_Kd, "DEEPSTALL_KD", 8),
-    GSCALAR(deepstall_ilimit, "DEEPSTALL_ILIM", 0.2),
-    GSCALAR(deepstall_yrlimit, "DEEPSTALL_YLIM", 0.25),
-
-    GSCALAR(deepstall_vd, "DEEPSTALL_VD", 8),
-    GSCALAR(deepstall_ds, "DEEPSTALL_DS", 50),
-    GSCALAR(deepstall_vspeed, "DEEPSTALL_VSPEED", -6),
-    GSCALAR(deepstall_slew_speed, "DEEPSTALL_SLEW", 0.5),
-    GSCALAR(deepstall_settle, "DEEPSTALL_SETL", 2.0f),
-    GSCALAR(deepstall_descent, "DEEPSTALL_DESC", -1.0f),
-    GSCALAR(deepstall_accel, "DEEPSTALL_ACCL", 9.0f),
-    GSCALAR(deepstall_l1, "DEEPSTALL_L1", 5.0f),
-    GSCALAR(deepstall_yaw_limit, "DEEPSTALL_LIMY", 0.3f),
-    GSCALAR(deepstall_approach_airspeed_cm, "DEEPSTALL_AIRS", 1400.0f),
-
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp

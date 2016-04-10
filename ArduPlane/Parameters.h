@@ -49,13 +49,6 @@ public:
         k_param_format_version = 0,
         k_param_software_type,
         k_param_num_resets,
-        k_param_deepstall_l1,
-        k_param_deepstall_elev,
-        k_param_deepstall_accel,
-        k_param_deepstall_ds,
-        k_param_deepstall_settle,
-        k_param_deepstall_vd,
-        k_param_deepstall_vspeed,
 
         // Misc
         //
@@ -159,8 +152,6 @@ public:
         k_param_fence_retalt = 105,
         k_param_fence_autoenable,
         k_param_fence_ret_rally,
-        k_param_land_deepstall,
-        k_param_deepstall_yaw_limit,
 
         // 110: Telemetry control
         //
@@ -280,7 +271,6 @@ public:
         k_param_long_fs_timeout,
         k_param_rc_13,
         k_param_rc_14,
-        k_param_deepstall_descent,
 
         //
         // 200: Feed-forward gains
@@ -293,7 +283,6 @@ public:
         k_param_quadplane,
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,
-        k_param_deepstall_approach_airspeed_cm,
         k_param_deepstall_control,
 
         //
@@ -307,9 +296,6 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_initial_mode,
-
-        k_param_deepstall_yrlimit,
-        k_param_deepstall_slew_speed,
 
         //
         // 220: Waypoint data
@@ -347,10 +333,6 @@ public:
         k_param_pidTeThrottle, // unused
         k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer, // unused
-        k_param_deepstall_Kp,
-        k_param_deepstall_Ki,
-        k_param_deepstall_Kd,
-        k_param_deepstall_ilimit,
 
         k_param_DataFlash = 253, // Logging Group
 
@@ -531,26 +513,7 @@ public:
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;
-    AP_Int8 land_deepstall;
-    AP_Int16 deepstall_elev;
-    AP_Float deepstall_Kyr;
-    AP_Float deepstall_Kp;
-    AP_Float deepstall_Ki;
-    AP_Float deepstall_Kd;
-    AP_Float deepstall_ilimit;
-    AP_Float deepstall_yrlimit;
     
-    AP_Float deepstall_vd;
-    AP_Float deepstall_ds;
-    AP_Float deepstall_vspeed;
-    AP_Float deepstall_slew_speed;
-    AP_Float deepstall_settle;
-    AP_Float deepstall_descent;
-    AP_Float deepstall_accel;
-    AP_Float deepstall_l1;
-    AP_Float deepstall_yaw_limit;
-    AP_Float deepstall_approach_airspeed_cm;
-
     // RC channels
     RC_Channel rc_1;
     RC_Channel rc_2;

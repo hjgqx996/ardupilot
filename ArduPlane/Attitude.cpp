@@ -211,7 +211,7 @@ void Plane::stabilize_stick_mixing_fbw()
  */
 void Plane::stabilize_yaw(float speed_scaler)
 {
-    if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL && g.land_deepstall == 0.0f) {
+    if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL && deepstall_control.enable == 0.0f) {
         // in land final setup for ground steering
         steering_control.ground_steering = true;
     } else {
@@ -235,7 +235,7 @@ void Plane::stabilize_yaw(float speed_scaler)
       final stage of landing (when the wings are help level) or when
       in course hold in FBWA mode (when we are below GROUND_STEER_ALT)
      */
-    if ((control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL && g.land_deepstall == 0.0f) ||
+    if ((control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL && deepstall_control.enable == 0.0f) ||
         (steer_state.hold_course_cd != -1 && steering_control.ground_steering)) {
         calc_nav_yaw_course();
     } else if (steering_control.ground_steering) {
@@ -528,7 +528,7 @@ void Plane::throttle_slew_limit(int16_t last_throttle)
     if (control_mode==AUTO) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
-        } else if (g.land_throttle_slewrate != 0 && g.land_deepstall == 0 &&
+        } else if (g.land_throttle_slewrate != 0 && deepstall_control.enable == 0 &&
                 (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
@@ -899,20 +899,18 @@ void Plane::set_servos(void)
         if (g.mix_mode == 0) {
 
             channel_roll->calc_pwm();
-            if (g.land_deepstall > 0 && control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-                float slew_progress_unclamped = (AP_HAL::millis() - deepstall_control.deepstall_start_time) / g.deepstall_slew_speed;
-                float slew_progress_clamped = CLAMP(slew_progress_unclamped, 0.0f, 1.0f);
+            if (deepstall_control.enable > 0 && control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+                float slew_progress_clamped = CLAMP((AP_HAL::millis() - deepstall_control.deepstall_start_time)
+                                                         / deepstall_control.slew_speed,
+                                                      0.0f, 1.0f);
                 float l_airspeed;
                 ahrs.airspeed_estimate(&l_airspeed);
 
-                channel_pitch->radio_out = channel_pitch->radio_trim * (1.0f - slew_progress_clamped) +  g.deepstall_elev * slew_progress_clamped;
+                // FIXME: add MIX macro for this
+                channel_pitch->radio_out = channel_pitch->radio_trim * (1.0f - slew_progress_clamped) +  deepstall_control.elevator * slew_progress_clamped;
 
-                Vector3f ned_3;
-                ahrs.get_velocity_NED(ned_3);
-                if (slew_progress_unclamped >= g.deepstall_settle ||
-                    (l_airspeed <= g.deepstall_accel) ||
-                    ((g.deepstall_descent != 0.0) && (ned_3[2] > g.deepstall_descent))) {
-                    deepstall_control.land(ahrs.yaw, ahrs.get_gyro().z, current_loc, g.deepstall_l1, g.deepstall_yaw_limit);
+                if (slew_progress_clamped >= 1.0f || (l_airspeed <= deepstall_control.controller_handoff_airspeed_cm)) {
+                    deepstall_control.land(ahrs.yaw, ahrs.get_gyro().z, current_loc);
                     uint16_t rudderLimit;
                     if (l_airspeed > 12.0f) {
                         rudderLimit = 0.5f;
@@ -944,7 +942,7 @@ void Plane::set_servos(void)
         if (control_mode == AUTO) {
             if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
                 min_throttle = 0;
-                if (g.land_deepstall > 0) {
+                if (deepstall_control.enable > 0) { // throttle is not allowed during deepstall
                     max_throttle = 0;
                 }
             }

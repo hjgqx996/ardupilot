@@ -42,7 +42,7 @@ bool Plane::verify_land()
     }
 
             // Compute target deepstall heading based on current wind estimate
-    if (g.land_deepstall > 0) {
+    if (deepstall_control.enable > 0) {
         AP_Mission::Mission_Command cmd;
         uint16_t current_index = mission.get_current_nav_index();
         mission.read_cmd_from_storage(current_index, cmd);
@@ -57,13 +57,10 @@ bool Plane::verify_land()
             }
             
             // Compute approach path (waypoints) for each stage of the deepstall
-            deepstall_control.computeApproachPath(ahrs.wind_estimate(), 120, g.deepstall_ds, g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, next_WP_loc, cmd.p1);
+            deepstall_control.computeApproachPath(ahrs.wind_estimate(), g.loiter_radius, relative_altitude(), next_WP_loc, cmd.p1);
             
             deepstall_control.ready = true; // Set ready flag - only reset on abort
         }
-        
-        // Set deepstall target and parameters
-        deepstall_control.setYRCParams(g.deepstall_Kyr, g.deepstall_yrlimit, g.deepstall_Kp, g.deepstall_Ki, g.deepstall_Kd, g.deepstall_ilimit);
         
         Location target {};
         memcpy(&target, &next_WP_loc, sizeof(Location));
@@ -71,7 +68,7 @@ bool Plane::verify_land()
          
         // Retrieve current approach path waypoint (or if false returned, land)
 //        if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-            switch (deepstall_control.getApproachWaypoint(target, next_WP_loc, current_loc, ahrs.wind_estimate(), g.deepstall_vd, relative_altitude(), g.deepstall_vspeed, gps.ground_course_cd(), nav_controller, g.loiter_radius, cmd.p1)) {
+            switch (deepstall_control.getApproachWaypoint(target, next_WP_loc, current_loc, ahrs.wind_estimate(), relative_altitude(), gps.ground_course_cd(), nav_controller, g.loiter_radius, cmd.p1)) {
                 case DEEPSTALL_FLY_TO_LOITER:
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
                     nav_controller->update_waypoint(current_loc, target);

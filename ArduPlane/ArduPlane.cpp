@@ -863,7 +863,8 @@ void Plane::update_alt()
 
     update_flight_stage();
 
-    bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) && g.land_deepstall == 0;
+    bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) &&
+                              deepstall_control.enable == 0;
     float distance_beyond_land_wp = 0;
     if (is_doing_auto_land && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
@@ -906,7 +907,7 @@ void Plane::update_flight_stage(void)
             } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-                if (g.land_deepstall == 0) {
+                if (deepstall_control.enable == 0) {
 
                     if ((g.land_abort_throttle_enable && channel_throttle->control_in >= 90) ||
                             auto_state.commanded_go_around ||
@@ -917,7 +918,7 @@ void Plane::update_flight_stage(void)
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
                     } else if (auto_state.land_pre_flare == true) {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
-                    } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH && g.land_deepstall == 0) {
+                    } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH && deepstall_control.enable == 0) {
                         float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
                         bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
                         bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
