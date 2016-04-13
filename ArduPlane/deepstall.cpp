@@ -104,11 +104,11 @@ float DeepStall::predictDistanceTraveled(Vector3f wind, float altitude) {
     Vector2f wind_vec(wind.x, wind.y);
     Vector2f course_vec(cos(course), sin(course));
 
-    float stall_distance = ds_a * wind_vec.length() + ds_b;
+    float offset = radians(targetHeading) + atan2(-wind.y, -wind.x) + M_PI;
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
-                  "theta = acos(%f) %f\n", acos((wind_vec * course_vec) / (MAX(wind_vec.length(), 0.05f) * course_vec.length())),
-                  (wind_vec * course_vec) / (MAX(wind_vec.length(), 0.05f) * course_vec.length()));
+    float stall_distance = ds_a * wind_vec.length() * cos(offset) + ds_b;
+
+    float input = (wind_vec * course_vec) / (MAX(wind_vec.length(), 0.05f) * course_vec.length());
     float theta = acos(CLAMP((wind_vec * course_vec) / (MAX(wind_vec.length(), 0.05f) * course_vec.length()), -1.0f, 1.0f));
     theta *= (course_vec % wind_vec) > 0 ? -1 : 1;
 //    float forward_component = cosf(theta) * wind_vec.length();
