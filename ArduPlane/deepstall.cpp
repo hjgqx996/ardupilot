@@ -272,25 +272,19 @@ void DeepStall::land(float track, float yawrate, Location current_loc) {
         if (l1_i > 0) {
             l1_xtrack_i += nu1 * l1_i * (1.0 / dt);
             l1_xtrack_i = constrain_float(l1_xtrack_i, -0.5f, 0.5f);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
-                                             "applied %f to %f %f\n", degrees(l1_xtrack_i), degrees(nu1), 1 * l1_i);
+//            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
+//                                             "applied %f to %f %f\n", degrees(l1_xtrack_i), degrees(nu1), 1 * l1_i);
         }
         nu1 += l1_xtrack_i;
 
 	targetTrack = course + nu1;
 
         float desiredChange = atan2(sin(wrap_PI(targetTrack) - track), cos(wrap_PI(targetTrack) - track));
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
-            "delta %f %f %f %f\n",
-            degrees(desiredChange),
-            degrees(targetTrack),
-            degrees(track));
 
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
-                   "%f %f %f %f %f\n",
+                   "x: %f e: %f r: %f d: %f\n",
                     _crosstrack_error,
-                    CLAMP(desiredChange / tcon, -yaw_rate_limit, yaw_rate_limit), 
-                    180 / M_PI * nu1,
+                    degrees(CLAMP(desiredChange / tcon, -yaw_rate_limit, yaw_rate_limit)), 
                     yawrate * 180 / M_PI,
                     location_diff(current_loc, landing_point).length());
 		
