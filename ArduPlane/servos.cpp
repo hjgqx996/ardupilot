@@ -28,7 +28,7 @@ void Plane::throttle_slew_limit(int16_t last_throttle)
     if (control_mode==AUTO) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
-        } else if (landing.get_throttle_slewrate() != 0 && landing.in_progress) {
+        } else if (landing.get_throttle_slewrate() != 0 && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
             slewrate = landing.get_throttle_slewrate();
         }
     }
@@ -548,7 +548,7 @@ void Plane::set_servos_flaps(void)
             auto_flap_percent = g.flap_1_percent;
         } //else flaps stay at default zero deflection
 
-        if (landing.in_progress && landing.get_flap_percent() != 0) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && landing.get_flap_percent() != 0) {
             auto_flap_percent = landing.get_flap_percent();
         }
 
