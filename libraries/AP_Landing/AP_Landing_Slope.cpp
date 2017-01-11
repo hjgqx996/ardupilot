@@ -338,7 +338,7 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
 
 bool AP_Landing::type_slope_is_flaring(void) const
 {
-    return in_progress && type_slope_stage == SLOPE_FINAL;
+    return in_progress && type_slope_stage == SLOPE_STAGE_FINAL;
 }
 
 
