@@ -62,7 +62,7 @@ public:
     // NOTE: make sure to update is_type_valid()
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
-//      TODO: TYPE_DEEPSTALL,
+        TYPE_DEEPSTALL = 1,
 //      TODO: TYPE_PARACHUTE,
 //      TODO: TYPE_HELICAL,
     };
@@ -176,5 +176,14 @@ private:
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
+
+
+    // Landing type TYPE_DEEPSTALL
+    void type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
+    void type_deepstall_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
+    bool type_deepstall_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+            const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);
+    void type_deepstall_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
+    bool type_deepstall_request_go_around(void);
 
 };
