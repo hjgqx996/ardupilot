@@ -138,6 +138,42 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
 
+    // @Param: DS_V_FWD
+    // @DisplayName: Deepstall forward velocity
+    // @Description: The forward velocity of the aircraft while stalled
+    // @Range: 0 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_V_FWD", 15, AP_Landing, type_deepstall_forward_speed, 1),
+
+    // @Param: DS_SLOPE_A
+    // @DisplayName: Deepstall slope a
+    // @Description: The a component of distance = a*wind + b
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLOPE_A", 16, AP_Landing, type_deepstall_slope_a, 1),
+
+    // @Param: DS_SLOPE_B
+    // @DisplayName: Deepstall slope b
+    // @Description: The a component of distance = a*wind + b
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLOPE_B", 17, AP_Landing, type_deepstall_slope_b, 1),
+
+    // @Param: DS_APP_EXT
+    // @DisplayName: Deepstall approach extension
+    // @Description: The forward velocity of the aircraft while stalled
+    // @Range: 10 200
+    // @Units: meters
+    // @User: Advanced
+    AP_GROUPINFO("DS_APP_EXT", 18, AP_Landing, type_deepstall_approach_extension, 50),
+
+    // @Param: DS_V_DWN
+    // @DisplayName: Deepstall veloicty down
+    // @Description: The downward velocity of the aircraft while stalled
+    // @Range: 0 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_V_DWN", 19, AP_Landing, type_deepstall_down_speed, 2),
+
     AP_GROUPEND
 };
 
@@ -258,6 +294,22 @@ bool AP_Landing::is_on_approach(void) const
     }
 }
 
+// return true while the aircraft is allowed to perform ground steering
+bool AP_Landing::is_ground_steering_allowed(void) const
+{
+    if (!in_progress) {
+        return true;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_approach();
+    case TYPE_DEEPSTALL:
+        return false;
+    default:
+        return true;
+    }
+}
 // return true when at the last stages of a land when an impact with the ground is expected soon
 // when true is_flying knows that the vehicle was expecting to stop flying, possibly because of a hard impact
 bool AP_Landing::is_expecting_impact(void) const
@@ -357,6 +409,22 @@ int32_t AP_Landing::constrain_roll(const int32_t desired_roll_cd, const int32_t 
     case TYPE_DEEPSTALL:
     default:
         return desired_roll_cd;
+    }
+}
+
+// returns true if landing provided a Location structure with the current target altitude
+bool AP_Landing::get_target_altitude_location(Location &location)
+{
+    if (!in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_get_target_altitude_location(location);
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
     }
 }
 

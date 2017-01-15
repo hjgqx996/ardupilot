@@ -78,8 +78,10 @@ public:
     bool request_go_around(void);
     bool is_flaring(void) const;
     bool is_on_approach(void) const;
+    bool is_ground_steering_allowed(void) const;
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
+    bool get_target_altitude_location(Location &location);
 
     // helper functions
     bool restart_landing_sequence(void);
@@ -151,6 +153,11 @@ private:
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
+    AP_Float type_deepstall_forward_speed;
+    AP_Float type_deepstall_slope_a;
+    AP_Float type_deepstall_slope_b;
+    AP_Float type_deepstall_approach_extension;
+    AP_Float type_deepstall_down_speed;
 
     // Land Type STANDARD GLIDE SLOPE
     enum slope_stage {
@@ -179,11 +186,37 @@ private:
 
 
     // Landing type TYPE_DEEPSTALL
+
+    //public AP_Landing interface
     void type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     void type_deepstall_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
     bool type_deepstall_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);
     void type_deepstall_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     bool type_deepstall_request_go_around(void);
+    bool type_deepstall_get_target_altitude_location(Location &location);
+
+    //private helpers
+    void type_deepstall_set_target_heading(const float heading, const bool constrain);
+    void type_deepstall_build_approach_path(const Vector3f wind, const float height, const Location &landing_point);
+    float type_deepstall_predict_travel_distance(const Vector3f wind, const float height) const;
+    bool type_deepstall_verify_loiter_breakout(const Location &current_loc) const;
+
+    // deepstall members
+    enum deepstall_stage {
+        DEEPSTALL_STAGE_APPROACH_TARGET, // fly to within 500m of the target landing point before moving on
+        DEEPSTALL_STAGE_FLY_TO_LOITER,   // fly to witin 2*loiter_radius
+        DEEPSTALL_STAGE_LOITER,          // loiter until at target altitude and aligned with the landing point
+        DEEPSTALL_STAGE_APPROACH,        // fly the approach in, and prepare to deepstall when close 
+        DEEPSTALL_STAGE_LAND,            // the aircraft will stall torwards the ground while targeting a given point
+    };
+    deepstall_stage type_deepstall_stage;
+    Location type_deepstall_landing_point;
+    Location type_deepstall_extended_approach;
+    Location type_deepstall_loiter;
+    Location type_deepstall_loiter_exit;
+    float type_deepstall_target_heading_deg; //target heading for the deepstall in degrees
+
+    #define DEEPSTALL_LOITER_ALT_TOLERANCE 500UL
 
 };
