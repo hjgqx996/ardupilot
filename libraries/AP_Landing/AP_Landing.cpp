@@ -174,6 +174,73 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DS_V_DWN", 19, AP_Landing, type_deepstall_down_speed, 2),
 
+    // @Param: DS_SLEW_SPD
+    // @DisplayName: Deepstall slew speed
+    // @Description: The speed at which the elevator slews to deepstall
+    // @Range: 0 2
+    // @Units: seconds
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLEW_SPD", 20, AP_Landing, type_deepstall_slew_speed, 0.5),
+
+    // @Param: DS_ELEV_PWM
+    // @DisplayName: Deepstall elevator PWM
+    // @Description: The PWM value for the elevator at full deflection in deepstall
+    // @Range: 900 2100
+    // @Units: PWM
+    // @User: Advanced
+    AP_GROUPINFO("DS_ELEV_PWM", 21, AP_Landing, type_deepstall_elevator_pwm, 1500),
+
+    // @Param: DS_ARSP_MAX
+    // @DisplayName: Deepstall enabled airspeed
+    // @Description: The maximum aispeed where the deepstall steering controller is allowed to have control
+    // @Range: 5 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_ARSP_MAX", 22, AP_Landing, type_deepstall_handoff_airspeed, 15.0),
+
+    // @Param: DS_ARSP_MIN
+    // @DisplayName: Deepstall minimum derating airspeed
+    // @Description: Deepstall lowest airspeed where the deepstall controller isn't allowed full control
+    // @Range: 5 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_ARSP_MIN", 23, AP_Landing, type_deepstall_handoff_lower_limit_airspeed, 10.0),
+
+    // @Param: DS_L1
+    // @DisplayName: Deepstall L1 period
+    // @Description: Deepstall L1 navigational controller period
+    // @Range: 5 50
+    // @Units: meters
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1", 24, AP_Landing, type_deepstall_l1_period, 30.0),
+
+    // @Param: DS_L1_I
+    // @DisplayName: Deepstall L1 I gain
+    // @Description: Deepstall L1 integratior gain
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1", 25, AP_Landing, type_deepstall_l1_period, 0),
+
+    // @Param: DS_YAW_LIM
+    // @DisplayName: Deepstall yaw rate limit
+    // @Description: The yaw rate limit while navigating in deepstall
+    // @Range: 0 1
+    // @Units radians per second
+    // @User: Advanced
+    AP_GROUPINFO("DS_YAW_LIM", 26, AP_Landing, type_deepstall_yaw_rate_limit, 0),
+
+    // @Param: DS_L1_TCON
+    // @DisplayName: Deepstall L1 time constant
+    // @Description: Time constant for deepstall L1 control
+    // @Range: 0 1
+    // @Units seconds
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1_TCON", 27, AP_Landing, type_deepstall_time_constant, 0.4),
+
+    // @Group: DS_
+    // @Path: ../libraries/PID/PID.cpp
+    AP_SUBGROUPINFO(type_deepstall_PID, "DS_", 28, AP_Landing, PID),
+
     AP_GROUPEND
 };
 
@@ -327,6 +394,15 @@ bool AP_Landing::is_expecting_impact(void) const
     }
 }
 
+bool AP_Landing::control_servos(void) {
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_control_servos();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
 
 /*
   a special glide slope calculation for the landing approach
@@ -469,6 +545,7 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_get_target_airspeed_cm();
     case TYPE_DEEPSTALL:
+        return aparm.airspeed_cruise_cm;
     default:
         return SpdHgt_Controller->get_land_airspeed();
     }
@@ -510,5 +587,4 @@ bool AP_Landing::is_complete(void) const
         return true;
     }
 }
-
 

@@ -20,6 +20,7 @@
 #include "AP_Landing.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 void AP_Landing::type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
@@ -29,8 +30,6 @@ void AP_Landing::type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, 
 
     // compute the approach path with the expected height over the stall point
     type_deepstall_build_approach_path(wind, cmd.content.location.alt / 100.0f, cmd.content.location);
-
-    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
 }
 
 // currently identical to the slope aborts
@@ -50,6 +49,9 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms,
         const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
+        Location entry_point;
+        SRV_Channel* elevator;
+
         switch (type_deepstall_stage) {
 
         //deepstall is 
@@ -82,9 +84,9 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
             // FIXME: recompute target heading and approach
             //fallthrough
         case DEEPSTALL_STAGE_APPROACH:
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "nav approach");
             nav_controller->update_waypoint(type_deepstall_loiter_exit, type_deepstall_extended_approach);
 
-            Location entry_point;
             memcpy(&entry_point, &type_deepstall_landing_point, sizeof(Location));
             location_update(entry_point, type_deepstall_target_heading_deg + 180.0,
                             type_deepstall_predict_travel_distance(ahrs.wind_estimate(), height));
@@ -97,6 +99,15 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
                 return false;
             }
             type_deepstall_stage = DEEPSTALL_STAGE_LAND;
+            type_deepstall_stall_entry_time = AP_HAL::millis();
+            elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
+            if (elevator != nullptr) {
+                // take the last used elevator angle as the starting deflection
+                // don't worry about bailing here if the elevator channel can't be found
+                // that will be handled within control_servos
+                type_deepstall_initial_elevator_pwm = elevator->get_output_pwm();
+            }
+            type_deepstall_l1_xtrack_i = 0; // reset the integrators
             //fallthrough
         case DEEPSTALL_STAGE_LAND:
             // while in deepstall the only thing verify needs to keep the extended approach point sufficently far away
@@ -104,6 +115,60 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
             location_update(type_deepstall_extended_approach, type_deepstall_target_heading_deg, 1000.0);
             return false;
         }
+}
+
+bool AP_Landing::type_deepstall_control_servos(void)
+{
+    if (!(type_deepstall_stage == DEEPSTALL_STAGE_LAND)) {
+        return false;
+    }
+
+    SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
+    SRV_Channel* aileron = SRV_Channels::get_channel_for(SRV_Channel::k_aileron);
+
+    if (elevator == nullptr || aileron == nullptr) {
+        // deepstalls are impossible without these channels, abort the process
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find both a aileron and elevator channel");
+        type_deepstall_request_go_around();
+        return false;
+    }
+
+    // calculate the progress on slewing the elevator
+    float slew_progress = 1.0f;
+    if (type_deepstall_slew_speed > 0) {
+        slew_progress  = constrain_float((AP_HAL::millis() - type_deepstall_stall_entry_time) /
+                                         ( 100.0f * type_deepstall_slew_speed), 0.0f, 1.0f);
+    }
+
+    // mix the elevator to the correct value
+    elevator->set_output_pwm(linear_interpolate(type_deepstall_initial_elevator_pwm, type_deepstall_elevator_pwm,
+                             slew_progress, 0.0f, 1.0f));
+
+    // use the current airspeed to dictate the travel limits
+    float airspeed;
+    ahrs.airspeed_estimate(&airspeed);
+
+    // only allow the the deepstall steering controller to run below the handoff airspeed
+    if (slew_progress >= 1.0f || airspeed <= type_deepstall_handoff_airspeed) {
+        // run the steering conntroller
+        float pid = type_deepstall_update_steering();
+
+
+        float travel_limit = constrain_float((type_deepstall_handoff_airspeed - airspeed) /
+                                             (type_deepstall_handoff_airspeed - type_deepstall_handoff_lower_limit_airspeed) *
+                                             0.5f + 0.5f,
+                                             0.5f, 1.0f);
+
+        float output = constrain_float(pid, -travel_limit, travel_limit);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, output);
+
+    } else {
+        // allow the normal servo control of the channel
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
+                                        SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+    }
+
+    // hand off rudder control to deepstall controlled
 }
 
 bool AP_Landing::type_deepstall_request_go_around(void)
@@ -141,23 +206,26 @@ void AP_Landing::type_deepstall_build_approach_path(const Vector3f wind, const f
     location_update(type_deepstall_extended_approach, type_deepstall_target_heading_deg, 1000.0);
 
     float expected_travel_distance = type_deepstall_predict_travel_distance(wind, height);
+    float approach_extension = expected_travel_distance + type_deepstall_approach_extension + aparm.loiter_radius;
+    // an approach extension of 0 can result in a divide by 0
+    if (fabsf(approach_extension) < 1.0f) {
+        approach_extension = 1.0f;
+    }
 
-    location_update(type_deepstall_loiter_exit, type_deepstall_target_heading_deg + 180,
-                    expected_travel_distance + type_deepstall_approach_extension);
+    location_update(type_deepstall_loiter_exit, type_deepstall_target_heading_deg + 180, approach_extension);
     memcpy(&type_deepstall_loiter, &type_deepstall_loiter_exit, sizeof(Location));
     // TODO: Support loitering on either side of the approach path
     location_update(type_deepstall_loiter, type_deepstall_target_heading_deg + 90.0, aparm.loiter_radius);
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter: %3.8f %3.8f\n",
                                      type_deepstall_loiter.lat / 1e7, type_deepstall_loiter.lng / 1e7);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter exit: %3.8f %3.8f\n",
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter ex: %3.8f %3.8f\n",
                                      type_deepstall_loiter_exit.lat / 1e7, type_deepstall_loiter_exit.lng / 1e7);
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing: %3.8f %3.8f\n",
                                      type_deepstall_landing_point.lat / 1e7, type_deepstall_landing_point.lng / 1e7);
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended: %3.8f %3.8f\n",
                                      type_deepstall_extended_approach.lat / 1e7, type_deepstall_extended_approach.lng / 1e7);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended by: %f (%f)\n",
-                                     expected_travel_distance + aparm.loiter_radius + type_deepstall_approach_extension,
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended by: %f (%f)\n", approach_extension,
                                      expected_travel_distance);
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Target Heading: %3.1f\n\n", type_deepstall_target_heading_deg);
 
@@ -199,7 +267,7 @@ float AP_Landing::type_deepstall_predict_travel_distance(const Vector3f wind, co
 
 bool AP_Landing::type_deepstall_verify_loiter_breakout(const Location &current_loc) const
 {
-    int32_t heading_cd = (int32_t)(ahrs.groundspeed_vector().length() * 100.0);
+    int32_t heading_cd = (int32_t)(degrees(ahrs.groundspeed_vector().angle()) * 100.0);
     int32_t bearing_cd = get_bearing_cd(current_loc, type_deepstall_extended_approach);
 
     int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
@@ -212,11 +280,62 @@ bool AP_Landing::type_deepstall_verify_loiter_breakout(const Location &current_l
        the altitude to be within 0.5 meters of desired, and
        enforce a minimum of one turn
      */
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Breakout: %d %d %d", heading_cd, bearing_cd, heading_err_cd);
+
     if (labs(heading_err_cd) <= 1000  &&  
         labs(type_deepstall_loiter.alt - current_loc.alt) < DEEPSTALL_LOITER_ALT_TOLERANCE) {
             // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
             return true;
     }   
     return false;
+}
 
+float AP_Landing::type_deepstall_update_steering()
+{
+    Location current_loc;
+    if (!ahrs.get_position(current_loc)) {
+        // panic if no position source is available
+        // continue the deepstall. but target just holding the wings held level as deepstall should be a minimal energy
+        // configuration on the aircraft, and if a position isn't available aborting would be worse
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Deepstall: No position available. Attempting to hold level");
+        memcpy(&current_loc, &type_deepstall_landing_point, sizeof(Location));
+    }
+    uint32_t time = AP_HAL::millis();
+    float dt = constrain_value(time - type_deepstall_last_time, (uint32_t)10UL, (uint32_t)200UL) / 1000.0;
+    type_deepstall_last_time = time;
+
+
+    Vector2f ab = location_diff(type_deepstall_loiter_exit, type_deepstall_extended_approach);
+    ab.normalize();
+    Vector2f a_air = location_diff(type_deepstall_loiter_exit, current_loc);
+
+    float crosstrack_error = a_air % ab;
+    float sine_nu1 = constrain_float(crosstrack_error / MAX(type_deepstall_l1_period, 0.1f), -0.7071f, 0.7107f);
+    float nu1 = asinf(sine_nu1);
+
+    if (type_deepstall_l1_i > 0) {
+        type_deepstall_l1_xtrack_i += nu1 * type_deepstall_l1_i / dt;
+        type_deepstall_l1_xtrack_i = constrain_float(type_deepstall_l1_xtrack_i, -0.5f, 0.5f);
+        nu1 += type_deepstall_l1_xtrack_i;
+    }
+
+    float desired_change = wrap_PI(radians(type_deepstall_target_heading_deg) + nu1 - ahrs.yaw);
+
+    float yaw_rate = ahrs.get_gyro().z;
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f\n",
+                                     crosstrack_error,
+                                     degrees(constrain_float(desired_change / type_deepstall_time_constant,
+                                                             -type_deepstall_yaw_rate_limit, type_deepstall_yaw_rate_limit)), 
+                                     degrees(yaw_rate),
+                                     location_diff(current_loc, type_deepstall_landing_point).length());
+
+    float error = wrap_PI(constrain_float(desired_change / type_deepstall_time_constant,
+                                          -type_deepstall_yaw_rate_limit, type_deepstall_yaw_rate_limit));
+
+    float pid = type_deepstall_PID.get_pid(error);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "PID is %f", pid);
+
+    return pid;
 }

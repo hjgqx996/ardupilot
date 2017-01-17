@@ -20,6 +20,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
+#include <PID/PID.h>
 
 /// @class  AP_Landing
 /// @brief  Class managing ArduPlane landing methods
@@ -74,6 +75,7 @@ public:
             const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);
     void adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
+    bool control_servos(void);
     void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     bool request_go_around(void);
     bool is_flaring(void) const;
@@ -158,6 +160,14 @@ private:
     AP_Float type_deepstall_slope_b;
     AP_Float type_deepstall_approach_extension;
     AP_Float type_deepstall_down_speed;
+    AP_Float type_deepstall_slew_speed;
+    AP_Int16 type_deepstall_elevator_pwm;
+    AP_Float type_deepstall_handoff_airspeed;
+    AP_Float type_deepstall_handoff_lower_limit_airspeed;
+    AP_Float type_deepstall_l1_period;
+    AP_Float type_deepstall_l1_i;
+    AP_Float type_deepstall_yaw_rate_limit;
+    AP_Float type_deepstall_time_constant;
 
     // Land Type STANDARD GLIDE SLOPE
     enum slope_stage {
@@ -184,15 +194,17 @@ private:
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
 
-
     // Landing type TYPE_DEEPSTALL
 
     //public AP_Landing interface
     void type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     void type_deepstall_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
     bool type_deepstall_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-            const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);
-    void type_deepstall_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
+            const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms,
+            const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);
+    void type_deepstall_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc,
+            const Location &current_loc, int32_t &target_altitude_offset_cm);
+    bool type_deepstall_control_servos(void);
     bool type_deepstall_request_go_around(void);
     bool type_deepstall_get_target_altitude_location(Location &location);
 
@@ -201,6 +213,7 @@ private:
     void type_deepstall_build_approach_path(const Vector3f wind, const float height, const Location &landing_point);
     float type_deepstall_predict_travel_distance(const Vector3f wind, const float height) const;
     bool type_deepstall_verify_loiter_breakout(const Location &current_loc) const;
+    float type_deepstall_update_steering(void);
 
     // deepstall members
     enum deepstall_stage {
@@ -215,7 +228,12 @@ private:
     Location type_deepstall_extended_approach;
     Location type_deepstall_loiter;
     Location type_deepstall_loiter_exit;
-    float type_deepstall_target_heading_deg; //target heading for the deepstall in degrees
+    float type_deepstall_target_heading_deg;      // target heading for the deepstall in degrees
+    uint32_t type_deepstall_stall_entry_time;     // time when the aircrafted enter the stall (in millis)
+    uint16_t type_deepstall_initial_elevator_pwm; // PWM to start slewing the elevator up from
+    uint32_t type_deepstall_last_time;            // last time the controller ran
+    float type_deepstall_l1_xtrack_i;             // l1 integrator for navigation
+    PID type_deepstall_PID;
 
     #define DEEPSTALL_LOITER_ALT_TOLERANCE 500UL
 
