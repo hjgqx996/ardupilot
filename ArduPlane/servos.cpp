@@ -48,6 +48,8 @@ void Plane::throttle_slew_limit(void)
    *       4 - We are not performing a takeoff in Auto mode or takeoff speed/accel not yet reached
    *       OR
    *       5 - Home location is not set
+   *       OR
+   *       6- Landing does not want to allow throttle
 */
 bool Plane::suppress_throttle(void)
 {
@@ -58,6 +60,10 @@ bool Plane::suppress_throttle(void)
         return true;
     }
 #endif
+
+    if (landing.is_throttle_suppressed()) {
+        return true;
+    }
 
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
@@ -401,11 +407,15 @@ void Plane::set_servos_controlled(void)
     if (g.mix_mode != 0) {
         set_servos_old_elevons();
     } else {
-        // both types of secondary aileron are slaved to the roll servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+        if (!landing.control_servos()) {
+            // both types of secondary aileron are slaved to the roll servo out
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
+                                            SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
         
-        // both types of secondary elevator are slaved to the pitch servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+            // both types of secondary elevator are slaved to the pitch servo out
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input,
+                                            SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+        }
     }
 
     // convert 0 to 100% (or -100 to +100) into PWM
