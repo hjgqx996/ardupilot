@@ -224,10 +224,10 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: DS_YAW_LIM
     // @DisplayName: Deepstall yaw rate limit
     // @Description: The yaw rate limit while navigating in deepstall
-    // @Range: 0 1
-    // @Units radians per second
+    // @Range: 0 90
+    // @Units degrees per second
     // @User: Advanced
-    AP_GROUPINFO("DS_YAW_LIM", 26, AP_Landing, type_deepstall_yaw_rate_limit, 0),
+    AP_GROUPINFO("DS_YAW_LIM", 26, AP_Landing, type_deepstall_yaw_rate_limit, 10),
 
     // @Param: DS_L1_TCON
     // @DisplayName: Deepstall L1 time constant
@@ -395,6 +395,10 @@ bool AP_Landing::is_expecting_impact(void) const
 }
 
 bool AP_Landing::control_servos(void) {
+    if (!in_progress) {
+        return false;
+    }
+
     switch (type) {
     case TYPE_DEEPSTALL:
         return type_deepstall_control_servos();
@@ -585,6 +589,24 @@ bool AP_Landing::is_complete(void) const
         return false;
     default:
         return true;
+    }
+}
+
+/*
+ * returns true when throttle should be suppressed while landing
+ */
+bool AP_Landing::is_throttle_suppressed(void) const
+{
+    if (!in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_is_throttle_suppressed();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
     }
 }
 

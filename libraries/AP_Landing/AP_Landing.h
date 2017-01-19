@@ -81,6 +81,7 @@ public:
     bool is_flaring(void) const;
     bool is_on_approach(void) const;
     bool is_ground_steering_allowed(void) const;
+    bool is_throttle_suppressed(void) const;
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
@@ -207,12 +208,13 @@ private:
     bool type_deepstall_control_servos(void);
     bool type_deepstall_request_go_around(void);
     bool type_deepstall_get_target_altitude_location(Location &location);
+    bool type_deepstall_is_throttle_suppressed(void) const;
 
     //private helpers
     void type_deepstall_set_target_heading(const float heading, const bool constrain);
     void type_deepstall_build_approach_path(const Vector3f wind, const float height, const Location &landing_point);
     float type_deepstall_predict_travel_distance(const Vector3f wind, const float height) const;
-    bool type_deepstall_verify_loiter_breakout(const Location &current_loc) const;
+    bool type_deepstall_verify_loiter_breakout(const Location &current_loc, const float height_error) const;
     float type_deepstall_update_steering(void);
 
     // deepstall members
@@ -235,6 +237,6 @@ private:
     float type_deepstall_l1_xtrack_i;             // l1 integrator for navigation
     PID type_deepstall_PID;
 
-    #define DEEPSTALL_LOITER_ALT_TOLERANCE 500UL
+    #define DEEPSTALL_LOITER_ALT_TOLERANCE 5.0f
 
 };
