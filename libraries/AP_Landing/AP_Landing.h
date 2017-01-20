@@ -171,6 +171,8 @@ private:
     AP_Float type_deepstall_yaw_rate_limit;
     AP_Float type_deepstall_time_constant;
 
+    static const DataFlash_Class::PID_Info empty_pid;
+
     // Land Type STANDARD GLIDE SLOPE
     enum slope_stage {
         SLOPE_STAGE_NORMAL,

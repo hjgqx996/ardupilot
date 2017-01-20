@@ -408,14 +408,15 @@ bool AP_Landing::control_servos(void) {
     }
 }
 
-const DataFlash_Class::PID_Info& type_deepstall_get_pid_info(void)
+const DataFlash_Class::PID_Info& AP_Landing::get_pid_info(void) const
 {
-    switch (type) {
-    case TYPE_DEEPSTALL:
+// FIXME: Figure out how to handle not knowing the PID
+//    switch (type) {
+//    case TYPE_DEEPSTALL:
         return type_deepstall_get_pid_info();
-    default:
-        return nullptr;
-    }
+//    default:
+//        return empty_pid;
+//    }
 }
 
 /*

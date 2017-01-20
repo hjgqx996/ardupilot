@@ -24,6 +24,8 @@
 
 void AP_Landing::type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
+    type_deepstall_stage = DEEPSTALL_STAGE_APPROACH_TARGET;
+
     // for now all deepstalls are into the wind
     Vector3f wind = ahrs.wind_estimate();
     type_deepstall_set_target_heading(degrees(atan2(-wind.y, -wind.x)), false);
