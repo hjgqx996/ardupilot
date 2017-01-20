@@ -408,6 +408,16 @@ bool AP_Landing::control_servos(void) {
     }
 }
 
+const DataFlash_Class::PID_Info& type_deepstall_get_pid_info(void)
+{
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_get_pid_info();
+    default:
+        return nullptr;
+    }
+}
+
 /*
   a special glide slope calculation for the landing approach
 
@@ -602,9 +612,10 @@ bool AP_Landing::is_throttle_suppressed(void) const
     }
 
     switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_throttle_suppressed();
     case TYPE_DEEPSTALL:
         return type_deepstall_is_throttle_suppressed();
-    case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return false;
     }

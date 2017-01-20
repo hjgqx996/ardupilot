@@ -375,3 +375,7 @@ bool AP_Landing::type_slope_is_complete(void) const
     return (type_slope_stage == SLOPE_STAGE_FINAL);
 }
 
+bool AP_Landing::type_slope_is_throttle_suppressed(void) const
+{
+    return type_slope_stage == SLOPE_STAGE_FINAL;
+}

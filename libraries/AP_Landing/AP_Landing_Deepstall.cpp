@@ -194,6 +194,11 @@ bool AP_Landing::type_deepstall_get_target_altitude_location(Location &location)
     return true;
 }
 
+const DataFlash_Class::PID_Info& AP_Landing::type_deepstall_get_pid_info(void) const
+{
+    return type_deepstall_PID.get_pid_info();
+}
+
 void AP_Landing::type_deepstall_set_target_heading(const float heading_deg, const bool constrain)
 {
     if (constrain) {

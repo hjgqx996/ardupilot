@@ -105,6 +105,7 @@ public:
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
+    const DataFlash_Class::PID_Info& get_pid_info(void) const;
 
     // landing altitude offset (meters)
     float alt_offset;
@@ -194,6 +195,7 @@ private:
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
+    bool type_slope_is_throttle_suppressed(void) const;
 
     // Landing type TYPE_DEEPSTALL
 
@@ -209,6 +211,8 @@ private:
     bool type_deepstall_request_go_around(void);
     bool type_deepstall_get_target_altitude_location(Location &location);
     bool type_deepstall_is_throttle_suppressed(void) const;
+
+    const DataFlash_Class::PID_Info& type_deepstall_get_pid_info(void) const;
 
     //private helpers
     void type_deepstall_set_target_heading(const float heading, const bool constrain);
