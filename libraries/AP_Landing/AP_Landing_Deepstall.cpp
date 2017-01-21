@@ -28,7 +28,7 @@ void AP_Landing::type_deepstall_do_land(const AP_Mission::Mission_Command& cmd, 
 
     // for now all deepstalls are into the wind
     Vector3f wind = ahrs.wind_estimate();
-    type_deepstall_set_target_heading(degrees(atan2(-wind.y, -wind.x)), false);
+    type_deepstall_set_target_heading(degrees(atan2f(-wind.y, -wind.x)), false);
 
     // compute the approach path with the expected height over the stall point
     type_deepstall_build_approach_path(wind, cmd.content.location.alt / 100.0f, cmd.content.location);
@@ -94,7 +94,7 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
             memcpy(&entry_point, &type_deepstall_landing_point, sizeof(Location));
             location_update(entry_point, type_deepstall_target_heading_deg + 180.0, travel_distance);
 
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "nav approach: %f %d", travel_distance,
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "nav approach: %f %d", (double)travel_distance,
             location_passed_point(current_loc, type_deepstall_loiter_exit, entry_point)
                             );
 
@@ -121,6 +121,8 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
             // while in deepstall the only thing verify needs to keep the extended approach point sufficently far away
             nav_controller->update_waypoint(current_loc, type_deepstall_extended_approach);
             return false;
+        default:
+            return true;
         }
 }
 
@@ -132,10 +134,12 @@ bool AP_Landing::type_deepstall_control_servos(void)
 
     SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
     SRV_Channel* aileron = SRV_Channels::get_channel_for(SRV_Channel::k_aileron);
+    SRV_Channel* rudder = SRV_Channels::get_channel_for(SRV_Channel::k_rudder);
 
     if (elevator == nullptr || aileron == nullptr) {
         // deepstalls are impossible without these channels, abort the process
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find both a aileron and elevator channel");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+                                         "Deepstall: Unable to find aileron, rudder, and elevator channels");
         type_deepstall_request_go_around();
         return false;
     }
@@ -169,6 +173,7 @@ bool AP_Landing::type_deepstall_control_servos(void)
         float output = constrain_float(pid, -travel_limit, travel_limit);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, output*4500);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, output*4500);
 
     } else {
         // allow the normal servo control of the channel
@@ -177,6 +182,7 @@ bool AP_Landing::type_deepstall_control_servos(void)
     }
 
     // hand off rudder control to deepstall controlled
+    return true;
 }
 
 bool AP_Landing::type_deepstall_request_go_around(void)
@@ -206,7 +212,7 @@ void AP_Landing::type_deepstall_set_target_heading(const float heading_deg, cons
     if (constrain) {
         // FIXME: What is happening here???
         float delta = wrap_PI(radians(heading_deg - type_deepstall_target_heading_deg));
-        delta = atan2(sinf(delta), cosf(delta));
+        delta = atan2f(sinf(delta), cosf(delta));
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "FIXME: Deepstall constrain heading not yet implemented");
 //        targetHeading = wrap(CLAMP(delta, -15.0f, 15.0f) + targetHeading, -180.0f, 180.0f);
     } else {
@@ -236,16 +242,16 @@ void AP_Landing::type_deepstall_build_approach_path(const Vector3f wind, const f
     location_update(type_deepstall_loiter, type_deepstall_target_heading_deg + 90.0, aparm.loiter_radius);
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter: %3.8f %3.8f\n",
-                                     type_deepstall_loiter.lat / 1e7, type_deepstall_loiter.lng / 1e7);
+                                     (double)(type_deepstall_loiter.lat / 1e7),(double)( type_deepstall_loiter.lng / 1e7));
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter ex: %3.8f %3.8f\n",
-                                     type_deepstall_loiter_exit.lat / 1e7, type_deepstall_loiter_exit.lng / 1e7);
+                                     (double)(type_deepstall_loiter_exit.lat / 1e7), (double)(type_deepstall_loiter_exit.lng / 1e7));
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing: %3.8f %3.8f\n",
-                                     type_deepstall_landing_point.lat / 1e7, type_deepstall_landing_point.lng / 1e7);
+                                     (double)(type_deepstall_landing_point.lat / 1e7), (double)(type_deepstall_landing_point.lng / 1e7));
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended: %3.8f %3.8f\n",
-                                     type_deepstall_extended_approach.lat / 1e7, type_deepstall_extended_approach.lng / 1e7);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended by: %f (%f)\n", approach_extension,
-                                     expected_travel_distance);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Target Heading: %3.1f\n\n", type_deepstall_target_heading_deg);
+                                     (double)(type_deepstall_extended_approach.lat / 1e7), (double)(type_deepstall_extended_approach.lng / 1e7));
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended by: %f (%f)\n", (double)approach_extension,
+                                     (double)expected_travel_distance);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Target Heading: %3.1f\n\n", (double)type_deepstall_target_heading_deg);
 
 }
 
@@ -262,9 +268,9 @@ float AP_Landing::type_deepstall_predict_travel_distance(const Vector3f wind, co
     float wind_length = MAX(wind_vec.length(), 0.05f); // always assume a slight wind to avoid divide by 0
     Vector2f course_vec(cosf(course), sinf(course));
 
-    float offset = course + atan2(-wind.y, -wind.x) + M_PI;
+    float offset = course + atan2f(-wind.y, -wind.x) + M_PI;
 
-    float stall_distance = type_deepstall_slope_a * wind_length * cos(offset) + type_deepstall_slope_b;
+    float stall_distance = type_deepstall_slope_a * wind_length * cosf(offset) + type_deepstall_slope_b;
 
     float theta = constrain_float((wind_vec * course_vec) / wind_length, -1.0f, 1.0f);
     if ((course_vec % wind_vec) > 0) {
@@ -294,7 +300,7 @@ bool AP_Landing::type_deepstall_verify_loiter_breakout(const Location &current_l
        of margin so that the altitude to be within 5 meters of desired
      */
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Breakout: %f %f", heading_error, height_error);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Breakout: %f %f", (double)heading_error, (double)height_error);
 
     if (heading_error <= 10.0  && fabsf(height_error) < DEEPSTALL_LOITER_ALT_TOLERANCE) {
             // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
@@ -340,13 +346,13 @@ float AP_Landing::type_deepstall_update_steering()
                                           -yaw_rate_limit, yaw_rate_limit));
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f",
-                                     crosstrack_error,
-                                     error,
-                                     degrees(yaw_rate),
-                                     location_diff(current_loc, type_deepstall_landing_point).length());
+                                     (double)crosstrack_error,
+                                     (double)error,
+                                     (double)degrees(yaw_rate),
+                                     (double)location_diff(current_loc, type_deepstall_landing_point).length());
 
     float pid = type_deepstall_PID.get_pid(error);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "c: %f p: %f", desired_change, pid);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "c: %f p: %f", (double)desired_change, (double)pid);
 
     return pid;
 }
