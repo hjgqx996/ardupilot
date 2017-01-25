@@ -217,31 +217,36 @@ private:
     const DataFlash_Class::PID_Info& type_deepstall_get_pid_info(void) const;
 
     //private helpers
-    void type_deepstall_set_target_heading(const float heading, const bool constrain);
-    void type_deepstall_build_approach_path(const Vector3f wind, const float height, const Location &landing_point);
+    void type_deepstall_build_approach_path();
     float type_deepstall_predict_travel_distance(const Vector3f wind, const float height) const;
-    bool type_deepstall_verify_loiter_breakout(const Location &current_loc, const float height_error) const;
+    bool type_deepstall_verify_breakout(const Location &current_loc, const Location &target_loc, const float height_error) const;
     float type_deepstall_update_steering(void);
 
     // deepstall members
     enum deepstall_stage {
-        DEEPSTALL_STAGE_APPROACH_TARGET, // fly to within 500m of the target landing point before moving on
-        DEEPSTALL_STAGE_FLY_TO_LOITER,   // fly to witin 2*loiter_radius
-        DEEPSTALL_STAGE_LOITER,          // loiter until at target altitude and aligned with the landing point
-        DEEPSTALL_STAGE_APPROACH,        // fly the approach in, and prepare to deepstall when close 
-        DEEPSTALL_STAGE_LAND,            // the aircraft will stall torwards the ground while targeting a given point
+        DEEPSTALL_STAGE_FLY_TO_LANDING,    // fly to the deepstall landing point
+        DEEPSTALL_STAGE_ESTIMATE_WIND,     // loiter until we have a decent estimate of the wind for the target altitude
+        DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT, // wait until the aircraft is aligned for the optimal breakout
+        DEEPSTALL_STAGE_FLY_TO_ARC,        // fly to the start of the arc
+        DEEPSTALL_STAGE_ARC,               // fly the arc
+        DEEPSTALL_STAGE_APPROACH,          // fly the approach in, and prepare to deepstall when close 
+        DEEPSTALL_STAGE_LAND,              // the aircraft will stall torwards the ground while targeting a given point
     };
     deepstall_stage type_deepstall_stage;
     Location type_deepstall_landing_point;
     Location type_deepstall_extended_approach;
-    Location type_deepstall_loiter;
-    Location type_deepstall_loiter_exit;
+    Location type_deepstall_breakout_location;
+    Location type_deepstall_arc;
+    Location type_deepstall_arc_entry;
+    Location type_deepstall_arc_exit;
     float type_deepstall_target_heading_deg;      // target heading for the deepstall in degrees
     uint32_t type_deepstall_stall_entry_time;     // time when the aircrafted enter the stall (in millis)
     uint16_t type_deepstall_initial_elevator_pwm; // PWM to start slewing the elevator up from
     uint32_t type_deepstall_last_time;            // last time the controller ran
     float type_deepstall_l1_xtrack_i;             // l1 integrator for navigation
     PID type_deepstall_PID;
+    int32_t type_deepstall_last_target_bearing;   // used for tracking the progress on loitering
+    int32_t type_deepstall_loiter_sum_cd;         // used for tracking the progress on loitering
 
     #define DEEPSTALL_LOITER_ALT_TOLERANCE 5.0f
 
