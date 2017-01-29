@@ -358,7 +358,7 @@ float AP_Landing::type_deepstall_update_steering()
     float yaw_rate = ahrs.get_gyro().z;
     float yaw_rate_limit = radians(type_deepstall_yaw_rate_limit);
     float error = wrap_PI(constrain_float(desired_change / type_deepstall_time_constant,
-                                          -yaw_rate_limit, yaw_rate_limit));
+                                          -yaw_rate_limit, yaw_rate_limit) - yaw_rate);
 
     return type_deepstall_PID.get_pid(error);
 }
