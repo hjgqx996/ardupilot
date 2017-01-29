@@ -219,7 +219,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Description: Deepstall L1 integratior gain
     // @Range: 0 1
     // @User: Advanced
-    AP_GROUPINFO("DS_L1", 25, AP_Landing, type_deepstall_l1_period, 0),
+    AP_GROUPINFO("DS_L1_I", 25, AP_Landing, type_deepstall_l1_i, 0),
 
     // @Param: DS_YAW_LIM
     // @DisplayName: Deepstall yaw rate limit
