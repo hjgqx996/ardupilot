@@ -560,7 +560,7 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_get_target_airspeed_cm();
     case TYPE_DEEPSTALL:
-        return aparm.airspeed_cruise_cm;
+        return type_deepstall_get_target_airspeed_cm();
     default:
         return SpdHgt_Controller->get_land_airspeed();
     }

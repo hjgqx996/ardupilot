@@ -104,8 +104,8 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
         {
         Vector2f groundspeed = ahrs.groundspeed_vector();
         if (!nav_controller->reached_loiter_target() ||
-            (fabsf(type_deepstall_target_heading_deg -
-                   wrap_180(degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
+            (fabsf(wrap_180(type_deepstall_target_heading_deg -
+                            degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
             nav_controller->update_loiter(type_deepstall_arc, aparm.loiter_radius, 1);
             return false;
         }
@@ -113,7 +113,6 @@ bool AP_Landing::type_deepstall_verify_land(const Location &prev_WP_loc, Locatio
         //fallthrough
         }
     case DEEPSTALL_STAGE_APPROACH:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Altitude: %d", current_loc.alt - ahrs.get_home().alt);
         nav_controller->update_waypoint(type_deepstall_arc_exit, type_deepstall_extended_approach);
 
         travel_distance = type_deepstall_predict_travel_distance(ahrs.wind_estimate(), (current_loc.alt - ahrs.get_home().alt) / 100.0f);
@@ -224,6 +223,16 @@ bool AP_Landing::type_deepstall_get_target_altitude_location(Location &location)
     return true;
 }
 
+int32_t AP_Landing::type_deepstall_get_target_airspeed_cm(void) const
+{
+    if (type_deepstall_stage == DEEPSTALL_STAGE_APPROACH ||
+        type_deepstall_stage == DEEPSTALL_STAGE_LAND) {
+        return pre_flare_airspeed * 100;
+    } else {
+        return aparm.airspeed_cruise_cm;
+    }
+}
+
 const DataFlash_Class::PID_Info& AP_Landing::type_deepstall_get_pid_info(void) const
 {
     return type_deepstall_PID.get_pid_info();
@@ -303,7 +312,7 @@ float AP_Landing::type_deepstall_predict_travel_distance(const Vector3f wind, co
     float estimated_forward = cosf(estimated_crab_angle) * forward_speed + cosf(theta) * wind_length;
 
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", estimated_forward, stall_distance);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", stall_distance,  estimated_forward * height / type_deepstall_down_speed + stall_distance);
 
     return estimated_forward * height / type_deepstall_down_speed + stall_distance;
 }
@@ -359,6 +368,13 @@ float AP_Landing::type_deepstall_update_steering()
     float yaw_rate_limit = radians(type_deepstall_yaw_rate_limit);
     float error = wrap_PI(constrain_float(desired_change / type_deepstall_time_constant,
                                           -yaw_rate_limit, yaw_rate_limit) - yaw_rate);
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f",
+                                    (double)crosstrack_error,
+                                    (double)error,
+                                    (double)degrees(yaw_rate),
+                                    (double)location_diff(current_loc, type_deepstall_landing_point).length());
+
 
     return type_deepstall_PID.get_pid(error);
 }

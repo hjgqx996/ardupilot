@@ -212,6 +212,7 @@ private:
     bool type_deepstall_control_servos(void);
     bool type_deepstall_request_go_around(void);
     bool type_deepstall_get_target_altitude_location(Location &location);
+    int32_t type_deepstall_get_target_airspeed_cm(void) const;
     bool type_deepstall_is_throttle_suppressed(void) const;
 
     const DataFlash_Class::PID_Info& type_deepstall_get_pid_info(void) const;
