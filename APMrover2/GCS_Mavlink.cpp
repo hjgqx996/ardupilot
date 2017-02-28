@@ -1042,7 +1042,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // param7 : altitude
             result = MAV_RESULT_FAILED;  // assume failure
             if (is_equal(packet.param1, 1.0f)) {
-                rover.init_home();
+                rover.update_home();
             } else {
                 if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
                     // don't allow the 0,0 position
