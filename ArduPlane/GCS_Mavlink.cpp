@@ -1425,7 +1425,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1,1.0f)) {
-                plane.init_home();
+                plane.update_home();
             } else {
                 if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
                     // don't allow the 0,0 position
