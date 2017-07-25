@@ -142,6 +142,13 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
     
+    // @Param: TERMINATE
+    // @DisplayName: Landing termination
+    // @Description: Controls if the vehicle should terminate with a controlled landing rather then aerodynamically. Currently only supported by deepstall landings
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("TERMINATE", 16, AP_Landing, use_for_termination, 0),
+    
     AP_GROUPEND
 };
 
@@ -619,5 +626,23 @@ bool AP_Landing::is_flying_forward(void) const
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return true;
+    }
+}
+
+/*
+ * attempt to terminate flight with an immediate landing
+ * returns true if the landing library can and is terminating the landing
+ */
+bool AP_Landing::terminate(void) {
+    if (!use_for_termination) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.terminate();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
     }
 }

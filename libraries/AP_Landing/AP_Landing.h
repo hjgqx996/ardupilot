@@ -75,6 +75,9 @@ public:
     bool get_target_altitude_location(Location &location);
     bool send_landing_message(mavlink_channel_t chan);
 
+    // terminate the flight with an immediate landing, returns false if unable to be used for termination
+    bool terminate(void);
+
     // helper functions
     bool restart_landing_sequence(void);
     float wind_alignment(const float heading_deg);
@@ -148,6 +151,7 @@ private:
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
+    AP_Int8 use_for_termination;
 
     // Land Type STANDARD GLIDE SLOPE
 
