@@ -17,15 +17,18 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 {
     plane.g2.servo_channels.disable_passthrough(true);
     
-    // and all aux channels
-    SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SERVO_MAX);
-    SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    if (!plane.landing.terminate()) {
+        // aerodynamic termination is only required if the landing code couldn't handle it
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SERVO_MAX);
+        SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    }
 
     plane.servos_output();
 
