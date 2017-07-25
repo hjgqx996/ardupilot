@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.h"
+
 #include <GCS_MAVLink/GCS.h>
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
@@ -24,6 +26,11 @@ protected:
     AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_GPS *get_gps() const override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+
+#if ADVANCED_FAILSAFE == ENABLED
+    AP_AdvancedFailsafe *get_advanced_failsafe() const override;
+#endif
 
     uint8_t sysid_my_gcs() const override;
 
