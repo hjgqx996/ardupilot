@@ -3,6 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Analog.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,8 +37,10 @@ AP_BattMonitor_Analog::read()
         // this copes with changing the pin at runtime
         _curr_pin_analog_source->set_pin(_mon._curr_pin[_state.instance]);
 
+        float volt_average = _curr_pin_analog_source->voltage_average();
+        gcs().send_text(MAV_SEVERITY_INFO, "Voltage: %f", volt_average);
         // read current
-        _state.current_amps = (_curr_pin_analog_source->voltage_average()-_mon._curr_amp_offset[_state.instance])*_mon._curr_amp_per_volt[_state.instance];
+        _state.current_amps = (volt_average-_mon._curr_amp_offset[_state.instance])*_mon._curr_amp_per_volt[_state.instance];
 
         // update total current drawn since startup
         if (_state.last_time_micros != 0 && dt < 2000000.0f) {
