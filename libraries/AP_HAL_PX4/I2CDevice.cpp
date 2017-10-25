@@ -104,6 +104,7 @@ bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_le
     } else {
         // combined transfer
         if (transfer(send, send_len, recv, recv_len) != OK) {
+                printf("failed else\n");
             return false;
         }
     }
