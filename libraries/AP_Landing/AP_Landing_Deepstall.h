@@ -101,6 +101,7 @@ private:
     int32_t get_target_airspeed_cm(void) const;
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
+    bool is_on_approach(void) const;
     bool terminate(void);
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
