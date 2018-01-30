@@ -21,6 +21,7 @@
  */
 
 #include "Plane.h"
+#include <AP_Script/AP_Script.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros)
 
@@ -313,6 +314,7 @@ void Plane::update_aux(void)
 
 void Plane::one_second_loop()
 {
+    AP_Script();
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
