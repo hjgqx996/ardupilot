@@ -97,6 +97,8 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 
+#include <AP_Script/AP_Script.h>
+
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
@@ -288,6 +290,9 @@ private:
 
     // RSSI
     AP_RSSI rssi;
+
+    // Scripting
+    AP_Script scripts;
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO

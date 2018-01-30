@@ -104,6 +104,8 @@ void Plane::setup()
 
     rssi.init();
 
+    scripts.init();
+
     init_ardupilot();
 
     // initialise the main loop scheduler
@@ -306,6 +308,8 @@ void Plane::one_second_loop()
 {
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
+
+    scripts.run_script("local a=5 local b=10 local c=a+b sendText(string.format(\"testing math %d\", c)) return c+2");
 
     // make it possible to change control channel ordering at runtime
     set_control_channels();
