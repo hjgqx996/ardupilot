@@ -34,6 +34,7 @@
 ** same configuration.
 */
 /* #define LUA_32BITS */
+#define LUA_32BITS 1
 
 
 /*
