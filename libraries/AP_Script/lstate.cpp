@@ -6,6 +6,7 @@
 
 #define lstate_c
 #define LUA_CORE
+#pragma GCC optimize("O0")
 
 #include "lprefix.h"
 
@@ -34,8 +35,12 @@
 ** created; the seed is used to randomize hashes.
 */
 #if !defined(luai_makeseed)
+#if 1
+#define luai_makeseed() 4
+#else
 #include <time.h>
 #define luai_makeseed()		cast(unsigned int, time(NULL))
+#endif
 #endif
 
 
@@ -312,6 +317,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
+
   int i;
   lua_State *L;
   global_State *g;

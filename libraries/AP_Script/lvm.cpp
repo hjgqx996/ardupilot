@@ -1399,8 +1399,8 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         vmbreak;
       }
       vmcase(OP_EQ) {
-        TValue *rb = vRB(i);
-        Protect(cond = luaV_equalobj(L, vra, rb));
+          {  TValue *rb = vRB(i);
+        Protect(cond = luaV_equalobj(L, vra, rb));}
       condjump:
         if (cond != GETARG_k(i))
           pc++;  /* skip next jump */

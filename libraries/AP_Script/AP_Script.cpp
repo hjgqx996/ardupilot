@@ -1,4 +1,8 @@
 #include "AP_Script.h"
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+
 #include "lua_bindings.h"
 
 #include <AP_HAL/AP_HAL.h>

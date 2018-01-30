@@ -52,6 +52,7 @@
 */
 #if !defined(LUAI_THROW)				/* { */
 
+#define LUA_USE_LONGJMP 1
 #if defined(__cplusplus) && !defined(LUA_USE_LONGJMP)	/* { */
 
 /* C++ exceptions */

@@ -10,11 +10,9 @@
 #include "lprefix.h"
 
 
-#include <errno.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "lua.h"
 
@@ -128,7 +126,7 @@ static time_t l_checktime (lua_State *L, int arg) {
 
 /* ISO C definitions */
 #define LUA_TMPNAMBUFSIZE	L_tmpnam
-#define lua_tmpnam(b,e)		{ e = (tmpnam(b) == NULL); }
+#define lua_tmpnam(b,e)		"aelph"
 
 #endif				/* } */
 
@@ -152,7 +150,7 @@ static int os_execute (lua_State *L) {
 
 static int os_remove (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
-  return luaL_fileresult(L, remove(filename) == 0, filename);
+  return luaL_fileresult(L, unlink(filename) == 0, filename);
 }
 
 
@@ -165,7 +163,7 @@ static int os_rename (lua_State *L) {
 
 static int os_tmpname (lua_State *L) {
   char buff[LUA_TMPNAMBUFSIZE];
-  int err;
+  int err = 0;
   lua_tmpnam(buff, err);
   if (err)
     return luaL_error(L, "unable to generate a unique filename");
@@ -181,7 +179,7 @@ static int os_getenv (lua_State *L) {
 
 
 static int os_clock (lua_State *L) {
-  lua_pushnumber(L, ((lua_Number)clock())/(lua_Number)CLOCKS_PER_SEC);
+  lua_pushnumber(L, ((lua_Number)100000)/(lua_Number)CLOCKS_PER_SEC);
   return 1;
 }
 
@@ -280,72 +278,72 @@ static const char *checkoption (lua_State *L, const char *conv,
 #define SIZETIMEFMT	250
 
 
-static int os_date (lua_State *L) {
-  size_t slen;
-  const char *s = luaL_optlstring(L, 1, "%c", &slen);
-  time_t t = luaL_opt(L, l_checktime, 2, time(NULL));
-  const char *se = s + slen;  /* 's' end */
-  struct tm tmr, *stm;
-  if (*s == '!') {  /* UTC? */
-    stm = l_gmtime(&t, &tmr);
-    s++;  /* skip '!' */
-  }
-  else
-    stm = l_localtime(&t, &tmr);
-  if (stm == NULL)  /* invalid date? */
-    return luaL_error(L,
-                 "time result cannot be represented in this installation");
-  if (strcmp(s, "*t") == 0) {
-    lua_createtable(L, 0, 9);  /* 9 = number of fields */
-    setallfields(L, stm);
-  }
-  else {
-    char cc[4];  /* buffer for individual conversion specifiers */
-    luaL_Buffer b;
-    cc[0] = '%';
-    luaL_buffinit(L, &b);
-    while (s < se) {
-      if (*s != '%')  /* not a conversion specifier? */
-        luaL_addchar(&b, *s++);
-      else {
-        size_t reslen;
-        char *buff = luaL_prepbuffsize(&b, SIZETIMEFMT);
-        s++;  /* skip '%' */
-        s = checkoption(L, s, se - s, cc + 1);  /* copy specifier to 'cc' */
-        reslen = strftime(buff, SIZETIMEFMT, cc, stm);
-        luaL_addsize(&b, reslen);
-      }
-    }
-    luaL_pushresult(&b);
-  }
-  return 1;
-}
+//static int os_date (lua_State *L) {
+//  size_t slen;
+//  const char *s = luaL_optlstring(L, 1, "%c", &slen);
+//  time_t t = luaL_opt(L, l_checktime, 2, time(NULL));
+//  const char *se = s + slen;  /* 's' end */
+//  struct tm tmr, *stm;
+//  if (*s == '!') {  /* UTC? */
+//    stm = l_gmtime(&t, &tmr);
+//    s++;  /* skip '!' */
+//  }
+//  else
+//    stm = l_localtime(&t, &tmr);
+//  if (stm == NULL)  /* invalid date? */
+//    return luaL_error(L,
+//                 "time result cannot be represented in this installation");
+//  if (strcmp(s, "*t") == 0) {
+//    lua_createtable(L, 0, 9);  /* 9 = number of fields */
+//    setallfields(L, stm);
+//  }
+//  else {
+//    char cc[4];  /* buffer for individual conversion specifiers */
+//    luaL_Buffer b;
+//    cc[0] = '%';
+//    luaL_buffinit(L, &b);
+//    while (s < se) {
+//      if (*s != '%')  /* not a conversion specifier? */
+//        luaL_addchar(&b, *s++);
+//      else {
+//        size_t reslen;
+//        char *buff = luaL_prepbuffsize(&b, SIZETIMEFMT);
+//        s++;  /* skip '%' */
+//        s = checkoption(L, s, se - s, cc + 1);  /* copy specifier to 'cc' */
+//        reslen = strftime(buff, SIZETIMEFMT, cc, stm);
+//        luaL_addsize(&b, reslen);
+//      }
+//    }
+//    luaL_pushresult(&b);
+//  }
+//  return 1;
+//}
 
 
-static int os_time (lua_State *L) {
-  time_t t;
-  if (lua_isnoneornil(L, 1))  /* called without args? */
-    t = time(NULL);  /* get current time */
-  else {
-    struct tm ts;
-    luaL_checktype(L, 1, LUA_TTABLE);
-    lua_settop(L, 1);  /* make sure table is at the top */
-    ts.tm_sec = getfield(L, "sec", 0, 0);
-    ts.tm_min = getfield(L, "min", 0, 0);
-    ts.tm_hour = getfield(L, "hour", 12, 0);
-    ts.tm_mday = getfield(L, "day", -1, 0);
-    ts.tm_mon = getfield(L, "month", -1, 1);
-    ts.tm_year = getfield(L, "year", -1, 1900);
-    ts.tm_isdst = getboolfield(L, "isdst");
-    t = mktime(&ts);
-    setallfields(L, &ts);  /* update fields with normalized values */
-  }
-  if (t != (time_t)(l_timet)t || t == (time_t)(-1))
-    return luaL_error(L,
-                  "time result cannot be represented in this installation");
-  l_pushtime(L, t);
-  return 1;
-}
+//static int os_time (lua_State *L) {
+//  time_t t;
+//  if (lua_isnoneornil(L, 1))  /* called without args? */
+//    t = time(NULL);  /* get current time */
+//  else {
+//    struct tm ts;
+//    luaL_checktype(L, 1, LUA_TTABLE);
+//    lua_settop(L, 1);  /* make sure table is at the top */
+//    ts.tm_sec = getfield(L, "sec", 0, 0);
+//    ts.tm_min = getfield(L, "min", 0, 0);
+//    ts.tm_hour = getfield(L, "hour", 12, 0);
+//    ts.tm_mday = getfield(L, "day", -1, 0);
+//    ts.tm_mon = getfield(L, "month", -1, 1);
+//    ts.tm_year = getfield(L, "year", -1, 1900);
+//    ts.tm_isdst = getboolfield(L, "isdst");
+//    t = mktime(&ts);
+//    setallfields(L, &ts);  /* update fields with normalized values */
+//  }
+//  if (t != (time_t)(l_timet)t || t == (time_t)(-1))
+//    return luaL_error(L,
+//                  "time result cannot be represented in this installation");
+//  l_pushtime(L, t);
+//  return 1;
+//}
 
 
 static int os_difftime (lua_State *L) {
@@ -385,7 +383,7 @@ static int os_exit (lua_State *L) {
 
 static const luaL_Reg syslib[] = {
   {"clock",     os_clock},
-  {"date",      os_date},
+//  {"date",      os_date},
   {"difftime",  os_difftime},
   {"execute",   os_execute},
   {"exit",      os_exit},
@@ -393,7 +391,7 @@ static const luaL_Reg syslib[] = {
   {"remove",    os_remove},
   {"rename",    os_rename},
   {"setlocale", os_setlocale},
-  {"time",      os_time},
+//  {"time",      os_time},
   {"tmpname",   os_tmpname},
   {NULL, NULL}
 };

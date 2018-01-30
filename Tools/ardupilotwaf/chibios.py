@@ -143,7 +143,7 @@ def configure(cfg):
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     try:
-        cmd = 'python %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
+        cmd = 'python2 %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         print("Failed to generate hwdef.h")
@@ -152,7 +152,7 @@ def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
-        rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
+        rule='python2 ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
         group='dynamic_sources',
         target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )

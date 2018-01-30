@@ -1,8 +1,8 @@
-#include "lua_bindings.h"
-
 #include <AP_Common/AP_Common.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+
+#include "lua_bindings.h"
 
 void push_location(lua_State *state, const Location &loc) {
     lua_createtable(state, 0, 3);

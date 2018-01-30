@@ -2588,3 +2588,19 @@ fsync(int fileno)
     }
     return(0);
 }
+
+void *realloc(void *ptr, size_t size) {
+    if (size == 0) {
+       free(ptr);
+       return NULL;
+    }
+    if (ptr == NULL) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != NULL) {
+        memcpy(new_mem, ptr, size);
+    }
+    free(ptr);
+    return new_mem;
+}
