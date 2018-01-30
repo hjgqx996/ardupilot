@@ -13,7 +13,7 @@ public:
 
     void init(void);
 
-    int run_script(const char *script);
+    bool run_script(const char *script);
 
 private:
     lua_State *state;
