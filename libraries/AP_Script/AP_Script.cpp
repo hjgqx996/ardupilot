@@ -1,12 +1,5 @@
 #include "AP_Script.h"
-#include <GCS_MAVLink/GCS.h>
-
-int l_send_text(lua_State *L) {
-    const char* str = lua_tostring(L, 1);
-    gcs().send_text(MAV_SEVERITY_INFO, str);
-    return 0;
-}
-
+#include "lua_bindings.h"
 
 void AP_Script::init(void) {
     if (state != nullptr) {
@@ -16,9 +9,7 @@ void AP_Script::init(void) {
     state = luaL_newstate();
     luaL_openlibs(state);
 
-    // FIXME: Load ArduPilot bindings
-    lua_pushcfunction(state, l_send_text);
-    lua_setglobal(state, "sendText");
+    load_lua_bindings(state);
 }
 
 int AP_Script::run_script(const char *script) {
