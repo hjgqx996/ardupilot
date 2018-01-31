@@ -152,13 +152,6 @@ static int os_rename (lua_State *L) {
 }
 
 
-static int os_clock (lua_State *L) {
-  // FIXME: WickedShell: 100000 is a hard coded clock counter
-  lua_pushnumber(L, ((lua_Number)100000)/(lua_Number)CLOCKS_PER_SEC);
-  return 1;
-}
-
-
 /*
 ** {======================================================
 ** Time/Date operations
@@ -331,18 +324,6 @@ static int os_difftime (lua_State *L) {
 /* }====================================================== */
 
 
-static int os_setlocale (lua_State *L) {
-  static const int cat[] = {LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
-                      LC_NUMERIC, LC_TIME};
-  static const char *const catnames[] = {"all", "collate", "ctype", "monetary",
-     "numeric", "time", NULL};
-  const char *l = luaL_optstring(L, 1, NULL);
-  int op = luaL_checkoption(L, 2, "all", catnames);
-  lua_pushstring(L, setlocale(cat[op], l));
-  return 1;
-}
-
-
 static int os_exit (lua_State *L) {
   int status;
   if (lua_isboolean(L, 1))
@@ -357,7 +338,6 @@ static int os_exit (lua_State *L) {
 
 
 static const luaL_Reg syslib[] = {
-  {"clock",     os_clock},
 //  {"date",      os_date},
   {"difftime",  os_difftime},
   {"exit",      os_exit},
