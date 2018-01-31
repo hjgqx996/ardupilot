@@ -10,6 +10,7 @@
 #include "lprefix.h"
 
 
+#include <errno.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -151,7 +152,7 @@ static int os_execute (lua_State *L) {
 
 static int os_remove (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
-  return luaL_fileresult(L, unlink(filename) == 0, filename);
+  return luaL_fileresult(L, remove(filename) == 0, filename);
 }
 
 

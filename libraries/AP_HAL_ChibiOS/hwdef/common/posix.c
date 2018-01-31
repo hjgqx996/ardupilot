@@ -1702,6 +1702,14 @@ int unlink(const char *pathname)
     return(0);
 }
 
+/// @brief POSIX remove a file or directory
+///
+/// - man page remove (2).
+///
+/// @param[in] pathname: file or directory to delete.
+///
+/// @return 0 on sucess.
+/// @return -1 on error with errno set.
 
 int remove(const char *pathname)
 {
