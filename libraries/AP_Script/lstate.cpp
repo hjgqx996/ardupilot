@@ -6,7 +6,6 @@
 
 #define lstate_c
 #define LUA_CORE
-#pragma GCC optimize("O0")
 
 #include "lprefix.h"
 

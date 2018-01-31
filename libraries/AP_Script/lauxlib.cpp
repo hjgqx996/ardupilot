@@ -4,8 +4,6 @@
 ** See Copyright Notice in lua.h
 */
 
-#pragma GCC optimize("O0")
-
 #define lauxlib_c
 #define LUA_LIB
 
