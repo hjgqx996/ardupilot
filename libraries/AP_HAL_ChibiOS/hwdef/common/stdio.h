@@ -21,6 +21,9 @@
 extern "C" {
 #endif
 
+#define BUFSIZ 128
+#define L_tmpnam 64
+
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
 int snprintf(char *str, size_t size, const char *fmt, ...);
 int vasprintf(char **strp, const char *fmt, va_list ap);
