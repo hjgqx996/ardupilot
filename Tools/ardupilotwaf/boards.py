@@ -280,7 +280,6 @@ class chibios(Board):
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-fsingle-precision-constant',
-            '-fpermissive',
             '-Wno-attributes',
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
