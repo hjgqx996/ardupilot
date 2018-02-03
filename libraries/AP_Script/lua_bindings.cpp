@@ -1,5 +1,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "lua_bindings.h"
@@ -43,9 +44,40 @@ static const luaL_Reg gcs_functions[] =
     {NULL, NULL}
 };
 
+int lua_param_get(lua_State *state) {
+    if (lua_type(state, 1) != LUA_TSTRING) {
+        // don't convert things that aren't strings
+        // FIXME: Should this raise a runtime error instead?
+        lua_pushboolean(state, false);
+        lua_pushnumber(state, 0.0f);
+        return 2;
+    }
+    const char* str = lua_tostring(state, 1);
+    enum ap_var_type var_type;
+    AP_Param *param = AP_Param::find(str, &var_type);
+    if (param == nullptr) {
+        // no param by that name, return a failure
+        lua_pushboolean(state, false);
+        lua_pushnumber(state, 0.0f);
+        return 2;
+    }
+    lua_pushboolean(state, true);
+    lua_pushnumber(state, param->cast_to_float(var_type));
+    return 2;
+}
+
+static const luaL_Reg param_functions[] =
+{
+    {"get", lua_param_get},
+//    {"set", lua_param_set},
+    {NULL, NULL}
+};
+
 void load_lua_bindings(lua_State *state) {
     luaL_newlib(state, gps_functions);
     lua_setglobal(state, "gps");
     luaL_newlib(state, gcs_functions);
     lua_setglobal(state, "gcs");
+    luaL_newlib(state, param_functions);
+    lua_setglobal(state, "param");
 }
