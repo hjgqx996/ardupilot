@@ -107,7 +107,9 @@ void Plane::setup()
     scripts.init("local a=5 local b=10 local c=a+b "
                  "local d = gps.location().alt"
                  "local found,value = param.get(\"STAT_RUNTIME\") "
-                 "gcs.send_text(string.format(\"Looked up %f\", value))return");
+                 "gcs.send_text(string.format(\"Looked up %f\", value))"
+                 "while true do a = a + 1 end "
+                 );
 
     init_ardupilot();
 

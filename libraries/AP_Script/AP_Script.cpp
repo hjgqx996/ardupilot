@@ -19,6 +19,9 @@ void AP_Script::init(const char *script) {
     luaL_openlibs(state);
 
     load_lua_bindings(state);
+
+    lua_sethook(state, hook, LUA_MASKCOUNT, 10000);
+
     luaL_loadstring(state, script);
 }
 
@@ -30,6 +33,7 @@ bool AP_Script::run_script(const char *script) {
     if(lua_pcall(state, 0, LUA_MULTRET, 0)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(state, -1));
         hal.console->printf("Lua: %s", lua_tostring(state, -1));
+        lua_pop(state, 1);
         return false;
     }
     uint32_t runEnd = AP_HAL::micros();
