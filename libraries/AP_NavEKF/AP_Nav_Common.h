@@ -33,6 +33,7 @@ union nav_filter_status {
         uint16_t touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
         uint16_t using_gps          : 1; // 13 - true if we are using GPS position
         uint16_t gps_glitching      : 1; // 14 - true if the the GPS is glitching
+        uint16_t using_tas          : 1; // 15 - true if we are using the airspeed sensor
     } flags;
     uint16_t value;
 };
