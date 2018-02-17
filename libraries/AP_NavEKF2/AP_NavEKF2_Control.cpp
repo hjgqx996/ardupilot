@@ -501,6 +501,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE); // The GPS is glitching
+    filterStatus.flags.using_tas = tasHealth && filterHealthy;
 }
 
 #endif // HAL_CPU_CLASS
