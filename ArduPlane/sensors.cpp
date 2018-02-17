@@ -81,6 +81,7 @@ void Plane::accel_cal_update() {
  */
 void Plane::read_airspeed(void)
 {
+    static uint32_t lastGoodTime;
     if (airspeed.enabled()) {
         airspeed.read();
         if (should_log(MASK_LOG_IMU)) {
@@ -92,6 +93,18 @@ void Plane::read_airspeed(void)
         float temperature;
         if (airspeed.get_temperature(temperature)) {
             barometer.set_external_temperature(temperature);
+        }
+
+        nav_filter_status ahrs_status;
+        if (ahrs.get_filter_status(ahrs_status)) {
+            uint32_t now = AP_HAL::millis();
+            if (ahrs_status.flags.using_tas) {
+                lastGoodTime = now;
+            } else if (lastGoodTime > 0) {
+                if (now - lastGoodTime > 5000) {
+                    airspeed.set_use(false);
+                }
+            }
         }
     }
 
