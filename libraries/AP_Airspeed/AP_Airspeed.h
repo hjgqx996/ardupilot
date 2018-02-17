@@ -81,6 +81,9 @@ public:
     bool use(uint8_t i) const;
     bool use(void) const { return use(primary); }
 
+    void set_use(uint8_t i, bool use) { if (i < AIRSPEED_MAX_SENSORS) { param[i].use = false; } };
+    void set_use(bool use) { set_use(primary, use); }
+
     // return true if airspeed is enabled
     bool enabled(uint8_t i) const {
         return param[i].type.get() != TYPE_NONE;
