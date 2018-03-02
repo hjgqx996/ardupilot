@@ -1193,12 +1193,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
 #endif
 
+    AP_GROUPINFO("RUDDER_CTRL", 13, ParametersG2, use_rudder_controller, 0),
+
+    AP_SUBGROUPINFO(rudder_pid, "RUDDER_", 14, ParametersG2, AC_PID),
+
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor, plane.ahrs),
-    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm),
+    rudder_pid(0, 0, 0, 0, 0, 0, 0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

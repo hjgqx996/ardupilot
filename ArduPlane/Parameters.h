@@ -552,6 +552,10 @@ public:
     AP_Gripper gripper;
 #endif
 
+    AP_Int8 use_rudder_controller;
+
+    AC_PID rudder_pid;
+
 };
 
 extern const AP_Param::Info var_info[];

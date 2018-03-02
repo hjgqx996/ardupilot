@@ -409,6 +409,7 @@ void Plane::stabilize()
         rollController.reset_I();
         pitchController.reset_I();
         yawController.reset_I();
+        g2.rudder_pid.reset_I();
 
         // if moving very slowly also zero the steering integrator
         if (gps.ground_speed() < 1) {
@@ -449,6 +450,7 @@ void Plane::calc_throttle()
  */
 void Plane::calc_nav_yaw_coordinated(float speed_scaler)
 {
+    static uint32_t rudder_time = 0;
     bool disable_integrator = false;
     if (control_mode == STABILIZE && rudder_input != 0) {
         disable_integrator = true;
@@ -464,9 +466,29 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     } else {
         commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
 
-        // add in rudder mixing from roll
-        commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
-        commanded_rudder += rudder_input;
+        if (g2.use_rudder_controller) {
+            uint32_t tnow = AP_HAL::millis();
+            uint32_t tdelta = tnow - rudder_time;
+            if (tdelta < 200) {
+                g2.rudder_pid.set_dt(tdelta * 1e-3f);
+            } else {
+                g2.rudder_pid.set_dt(0.0f);
+            }
+            rudder_time = tnow;
+
+            g2.rudder_pid.set_desired_rate(nav_roll_cd);
+            g2.rudder_pid.set_input_filter_all(nav_roll_cd - ahrs.roll_sensor);
+            float pid_output = g2.rudder_pid.get_ff(nav_roll_cd) + g2.rudder_pid.get_p() + g2.rudder_pid.get_i() + g2.rudder_pid.get_d();
+            if (g2.use_rudder_controller > 1) {
+                commanded_rudder = constrain_float(pid_output, -4500.0f, 4500.0f);
+            } else {
+                commanded_rudder += constrain_float(pid_output, -4500.0f, 4500.0f);
+            }
+        } else {
+            // add in rudder mixing from roll
+            commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
+            commanded_rudder += rudder_input;
+        }
     }
 
     steering_control.rudder = constrain_int16(commanded_rudder, -4500, 4500);

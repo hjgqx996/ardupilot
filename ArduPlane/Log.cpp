@@ -34,6 +34,7 @@ void Plane::Log_Write_Attitude(void)
     DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIQR_MSG, g2.rudder_pid.get_pid_info());
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     DataFlash.Log_Write_EKF(ahrs);
