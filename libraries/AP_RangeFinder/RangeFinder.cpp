@@ -32,7 +32,9 @@
 #include "AP_RangeFinder_uLanding.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_Wasp.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -525,6 +527,9 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, state[3].orientation, ROTATION_PITCH_270),
 #endif
+
+    AP_SUBGROUPVARPTR(drivers[0], "_", 57, RangeFinder, state.[0].backend_var_info),
+    AP_SUBGROUPVARPTR(drivers[0], "2_", 58, RangeFinder, state[1].backend_var_info),
     
     AP_GROUPEND
 };
@@ -714,6 +719,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(state[instance])) {
             drivers[instance] = new AP_RangeFinder_analog(state[instance]);
+        }
+        break;
+    case RangeFinder_TYPE_WASP:
+        if (AP_RangeFinder_Wasp::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Wasp(state[instance], serial_manager, serial_instance++);
         }
         break;
     default:
