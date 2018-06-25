@@ -373,3 +373,12 @@
  #define DEVO_TELEM_ENABLED ENABLED
 #endif
 #endif
+
+
+#ifndef OFFBOARD_GUIDED
+#if HAL_MINIMIZE_FEATURES
+# define OFFBOARD_GUIDED DISABLED
+#else
+# define OFFBOARD_GUIDED ENABLED
+#endif
+#endif

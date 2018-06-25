@@ -524,6 +524,28 @@ private:
         // throttle  commanded from external controller in percent
         float forced_throttle;
         uint32_t last_forced_throttle_ms;
+
+#if OFFBOARD_GUIDED == ENABLED
+        // airspeed adjustments
+        float target_airspeed_cm;
+        float target_airspeed_accel;
+        uint32_t target_airspeed_time_ms;
+
+        // altitude adjustments
+        float target_alt;
+        uint32_t last_target_alt;
+        float target_alt_accel;
+        uint32_t target_alt_time_ms;
+        uint8_t target_alt_frame;
+
+        // heading track
+        float target_heading;
+        float target_heading_accel_limit;
+        uint32_t target_heading_time_ms;
+        guided_heading_type_t target_heading_type;
+        bool target_heading_limit_low;
+        bool target_heading_limit_high;
+#endif // OFFBOARD_GUIDED == ENABLED
 } guided_state;
 
     struct {
@@ -789,6 +811,7 @@ private:
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
+    void Log_Write_Guided(void);
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();

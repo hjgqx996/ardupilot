@@ -294,6 +294,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     crash_state.impact_detected = false;
 
     // reset external attitude guidance
+    memset(&guided_state, 0, sizeof(guided_state));
     guided_state.last_forced_rpy_ms.zero();
     guided_state.last_forced_throttle_ms = 0;
 
