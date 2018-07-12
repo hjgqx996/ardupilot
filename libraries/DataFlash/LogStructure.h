@@ -908,6 +908,8 @@ struct PACKED log_Proximity {
 
 #define PID_LABELS "TimeUS,Des,P,I,D,FF,AFF"
 #define PID_FMT    "Qffffff"
+#define PID_UNITS  "s------"
+#define PID_MULTS  "F------"
 
 #define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
 #define QUAT_FMT    "Qffff"

@@ -399,3 +399,16 @@ float AP_AHRS::getSSA(void)
     update_AOA_SSA();
     return _SSA;
 }
+  
+  // singleton instance
+  AP_AHRS *AP_AHRS::_singleton;
+  
+  namespace AP {
+  
+  AP_AHRS &ahrs()
+  {
+      return *AP_AHRS::get_singleton();
+  }
+  
+  }
+

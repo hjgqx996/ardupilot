@@ -609,9 +609,9 @@ const struct LogStructure Plane::log_structure[] = {
       "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, 
 #if OFFBOARD_GUIDED == ENABLED
     { LOG_PIDG_MSG, sizeof(log_PID), \
-      "PIDG", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDG", PID_FMT,  PID_LABELS }, \
     { LOG_GUIDED_MSG, sizeof(log_Guided), \
-      "OFG", "QffffBff", "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "smomo-ro", "FB000-00"}, 
+      "OFG", "QffffBff", "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA"}, 
 #endif // OFFBOARD_GUIDED == ENABLED
 };
 
