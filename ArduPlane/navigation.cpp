@@ -114,11 +114,23 @@ void Plane::calc_airspeed_errors()
                                         aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
-
+#if OFFBOARD_GUIDED == ENABLED
+    } else if (control_mode == GUIDED && !is_zero(guided_state.target_airspeed_cm)) {
+        // offboard airspeed demanded
+        uint32_t now = AP_HAL::millis();
+        float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
+        guided_state.target_airspeed_time_ms = now;
+        float delta_amt = 100 * delta * guided_state.target_airspeed_accel;
+        target_airspeed_cm += delta_amt;
+        if (is_positive(guided_state.target_airspeed_accel)) {
+            target_airspeed_cm = MIN(guided_state.target_airspeed_cm, target_airspeed_cm);
+        } else {
+            target_airspeed_cm = MAX(guided_state.target_airspeed_cm, target_airspeed_cm);
+        }
+#endif // OFFBOARD_GUIDED == ENABLED
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;

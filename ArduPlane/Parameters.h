@@ -544,6 +544,20 @@ public:
 
     // mask of channels to do manual pass-thru for
     AP_Int32 manual_rc_mask;
+
+    // home reset altitude threshold
+    AP_Int8 home_reset_threshold;
+
+#if GRIPPER_ENABLED == ENABLED
+    // Payload Gripper
+    AP_Gripper gripper;
+#endif
+
+#if OFFBOARD_GUIDED == ENABLED
+    // guided yaw heading PID
+    AC_PID guidedHeading{5000.0, 0.0, 0.0, 10.0, 5.0, 0.2};
+#endif // OFFBOARD_GUIDED == ENABLED
+
 };
 
 extern const AP_Param::Info var_info[];

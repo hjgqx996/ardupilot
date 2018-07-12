@@ -275,6 +275,18 @@ struct PACKED log_Control_Tuning {
     float airspeed_estimate;
 };
 
+struct PACKED log_Guided {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float target_airspeed_cm;
+    float target_airspeed_accel;
+    float target_alt;
+    float target_alt_accel;
+    uint8_t target_alt_frame;
+    float target_heading;
+    float target_heading_limit;
+};
+
 // Write a control tuning packet. Total length : 22 bytes
 void Plane::Log_Write_Control_Tuning()
 {
@@ -528,6 +540,37 @@ void Plane::Log_Write_Home_And_Origin()
     }
 }
 
+void Plane::Log_Write_Guided(void)
+{
+#if OFFBOARD_GUIDED == ENABLED
+    if (control_mode != GUIDED) {
+      return;
+    }
+
+    if (guided_state.target_heading_time_ms != 0) {
+        DataFlash.Log_Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
+    }
+
+    if (guided_state.target_alt != 0 || guided_state.target_airspeed_cm) {
+        struct log_Guided pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_GUIDED_MSG),
+            time_us               : AP_HAL::micros64(),
+            target_airspeed_cm    : guided_state.target_airspeed_cm,
+            target_airspeed_accel : guided_state.target_airspeed_accel,
+            target_alt            : guided_state.target_alt,
+            target_alt_accel      : guided_state.target_alt_accel,
+            target_alt_frame      : guided_state.target_alt_frame,
+            target_heading        : guided_state.target_heading,
+            target_heading_limit  : guided_state.target_heading_accel_limit,
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    }
+#endif // OFFBOARD_GUIDED == ENABLED
+}
+
+// type and unit information can be found in
+// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// units and "Format characters" for field type information
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
@@ -563,7 +606,13 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_PIQA_MSG, sizeof(log_PID), \
       "PIQA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_AETR_MSG, sizeof(log_AETR), \
-      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, \
+      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, 
+#if OFFBOARD_GUIDED == ENABLED
+    { LOG_PIDG_MSG, sizeof(log_PID), \
+      "PIDG", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_GUIDED_MSG, sizeof(log_Guided), \
+      "OFG", "QffffBff", "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "smomo-ro", "FB000-00"}, 
+#endif // OFFBOARD_GUIDED == ENABLED
 };
 
 #if CLI_ENABLED == ENABLED
@@ -621,6 +670,7 @@ void Plane::Log_Write_Control_Tuning() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
 void Plane::Log_Write_Sonar() {}
+void Plane::Log_Write_Guided(void) {}
 
  #if OPTFLOW == ENABLED
 void Plane::Log_Write_Optflow() {}

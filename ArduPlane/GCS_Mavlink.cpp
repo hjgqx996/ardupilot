@@ -981,7 +981,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
-        case MAV_CMD_DO_REPOSITION:
+        case MAV_CMD_DO_REPOSITION: {
             // sanity check location
             if (!check_latlng(packet.x, packet.y)) {
                 result = MAV_RESULT_FAILED;
@@ -1042,6 +1042,123 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_FAILED; // failed as we are not in guided
             }
             break;
+        }
+
+#if OFFBOARD_GUIDED == ENABLED
+        case MAV_CMD_GUIDED_CHANGE_SPEED: {
+            // command is only valid in guided
+            if (plane.control_mode != GUIDED) {
+                result = MAV_RESULT_TEMPORARILY_REJECTED;
+                break;
+            }
+
+            // only airspeed commands are supported
+            if (packet.param1 != SPEED_TYPE_AIRSPEED) {
+                result = MAV_RESULT_UNSUPPORTED;
+                break;
+            }
+
+            // reject airspeeds that are outside of the tuning envelope
+            if (packet.param2 > plane.aparm.airspeed_max || packet.param2 < plane.aparm.airspeed_min) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
+            plane.guided_state.target_airspeed_cm = packet.param2 * 100;
+            plane.guided_state.target_airspeed_time_ms = AP_HAL::millis();
+
+            if (is_zero(packet.param3)) {
+                // the user wanted /maximum acceleration, pick a large value as close enough
+                plane.guided_state.target_airspeed_accel = 1000.0f;
+            } else {
+                plane.guided_state.target_airspeed_accel = fabsf(packet.param3);
+            }
+
+            // assign an acceleration direction
+            if (plane.guided_state.target_airspeed_cm < plane.target_airspeed_cm) {
+                plane.guided_state.target_airspeed_accel *= -1.0f;
+            }
+
+            result = MAV_RESULT_ACCEPTED;
+            break;
+        }
+
+        case MAV_CMD_GUIDED_CHANGE_ALTITUDE: {
+            // command is only valid in guided
+            if (plane.control_mode != GUIDED) {
+                result = MAV_RESULT_TEMPORARILY_REJECTED;
+                break;
+            }
+
+            // only global/relative/terrain frames are supported
+            switch(packet.frame) {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+                    plane.guided_state.target_alt = packet.z * 100 + plane.home.alt;
+                    break;
+                case MAV_FRAME_GLOBAL:
+                    plane.guided_state.target_alt = packet.z * 100;
+                    break;
+                default:
+                    // this wasn't a mission_item, so no forms of frame nacks are supported, MAV_RESULT_UNSUPPORED is the best we can do
+                    result = MAV_RESULT_UNSUPPORTED;
+                    break;
+            }
+
+            plane.guided_state.target_alt_frame = packet.frame;
+            plane.guided_state.last_target_alt = plane.current_loc.alt; // FIXME: Reference frame is not corrected for here
+            plane.guided_state.target_alt_time_ms = AP_HAL::millis();
+
+            if (is_zero(packet.param3)) {
+                // the user wanted /maximum acceleration, pick a large value as close enough
+                plane.guided_state.target_alt_accel = 1000.0;
+            } else {
+                plane.guided_state.target_alt_accel = fabsf(packet.param3);
+            }
+
+            // assign an acceleration direction
+            if (plane.guided_state.target_alt < plane.current_loc.alt) {
+                plane.guided_state.target_alt_accel *= -1.0f;
+            }
+
+            result = MAV_RESULT_ACCEPTED;
+            break;
+        }
+
+        case MAV_CMD_GUIDED_CHANGE_HEADING: {
+            // command is only valid in guided
+            if (plane.control_mode != GUIDED) {
+                result = MAV_RESULT_TEMPORARILY_REJECTED;
+                break;
+            }
+
+            // don't accept packets out a [0-360) degree range
+            if (packet.param2 < 0.0f || packet.param2 >= 360.0f) {
+                result = MAV_RESULT_TEMPORARILY_REJECTED;
+                break;
+            }
+
+            if (packet.param1 == HEADING_TYPE_COURSE_OVER_GROUND) {
+                plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
+                plane.prev_WP_loc = plane.current_loc;
+            }
+            else if (packet.param1 == HEADING_TYPE_HEADING) {
+                plane.guided_state.target_heading_type = GUIDED_HEADING_HEADING;
+            } else {
+                // unknown heading track type
+                result = MAV_RESULT_TEMPORARILY_REJECTED;
+                break;
+            }
+
+            plane.g2.guidedHeading.reset_I();
+
+            plane.guided_state.target_heading = radians(wrap_180(packet.param2));
+            plane.guided_state.target_heading_accel_limit = MAX(packet.param3, 0.05f);
+            plane.guided_state.target_heading_time_ms = AP_HAL::millis();
+            result = MAV_RESULT_ACCEPTED;
+            break;
+        }
+#endif // OFFBOARD_GUIDED == ENABLED
+
         }
 
         mavlink_msg_command_ack_send_buf(
@@ -1105,7 +1222,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
-            
+
 #if MOUNT == ENABLED
         // Sets the region of interest (ROI) for the camera
         case MAV_CMD_DO_SET_ROI:
