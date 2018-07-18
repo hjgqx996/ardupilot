@@ -3,6 +3,7 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_ADS1115.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -109,6 +110,9 @@ AP_BattMonitor::init()
                 _num_instances++;
 #endif
                 break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_ADS1115:
+                drivers[instance] = new AP_BattMonitor_ADS1115(*this, state[instance], _params[instance]);
+                _num_instances++;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
                 break;
