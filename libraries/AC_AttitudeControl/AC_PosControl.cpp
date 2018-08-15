@@ -835,8 +835,8 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    DataFlash_Class::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
-                                           "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
+    DataFlash_Class::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY,RT,PT",
+                                           "smmmmnnnnoooooo", "FBBBBBBBBBBBBBB", "Qffffffffffffff",
                                            AP_HAL::micros64(),
                                            (double)pos_target.x,
                                            (double)pos_target.y,
@@ -849,7 +849,9 @@ void AC_PosControl::write_log()
                                            (double)accel_target.x,
                                            (double)accel_target.y,
                                            (double)accel_x,
-                                           (double)accel_y);
+                                           (double)accel_y,
+                                           (double)_roll_target,
+                                           (double)_pitch_target);
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
