@@ -129,6 +129,8 @@ RC_Channel::update(void)
     } else if (!(*RC_Channels::options & RC_IGNORE_RECEIVER)) {
         radio_in = hal.rcin->read(ch_in);
     } else {
+        radio_in = 0;
+        control_in = 0;
         return false;
     }
 
