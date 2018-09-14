@@ -164,7 +164,7 @@ void AC_AttitudeControl::relax_attitude_controllers()
     // TODO add _ahrs.get_quaternion()
     _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
     _attitude_target_ang_vel = _ahrs.get_gyro();
-    _attitude_target_euler_angle = Vector3f(_ahrs.roll, _ahrs.pitch, _ahrs.yaw);
+    _attitude_target_euler_angle(_ahrs.roll, _ahrs.pitch, _ahrs.yaw);
 
     // Set reference angular velocity used in angular velocity controller equal
     // to the input angular velocity and reset the angular velocity integrators.
@@ -230,8 +230,8 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
         _attitude_target_quat = attitude_desired_quat;
 
         // Set rate feedforward requests to zero
-        _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-        _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+        _attitude_target_euler_rate.zero();
+        _attitude_target_ang_vel.zero();
     }
 
     // Call quaternion attitude controller
@@ -281,8 +281,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         _attitude_target_quat.from_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
         // Set rate feedforward requests to zero
-        _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-        _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+        _attitude_target_euler_rate.zero();
+        _attitude_target_ang_vel.zero();
     }
 
     // Call quaternion attitude controller
@@ -339,8 +339,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
         _attitude_target_quat.from_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
         // Set rate feedforward requests to zero
-        _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-        _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+        _attitude_target_euler_rate.zero();
+        _attitude_target_ang_vel.zero();
     }
 
     // Call quaternion attitude controller
@@ -378,8 +378,8 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
         _attitude_target_euler_angle.z = wrap_2PI(_attitude_target_euler_angle.z + euler_yaw_rate*_dt);
 
         // Set rate feedforward requests to zero
-        _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-        _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+        _attitude_target_euler_rate.zero();
+        _attitude_target_ang_vel.zero();
 
         // Compute quaternion target attitude
         _attitude_target_quat.from_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -418,8 +418,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
         _attitude_target_quat.normalize();
 
         // Set rate feedforward requests to zero
-        _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-        _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+        _attitude_target_euler_rate.zero();
+        _attitude_target_ang_vel.zero();
     }
 
     // Call quaternion attitude controller
@@ -513,8 +513,8 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
     // Set rate feedforward requests to zero
-    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_euler_rate.zero();
+    _attitude_target_ang_vel.zero();
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -581,13 +581,14 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
 void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot)
 {
+    const Vector3f thrust_unit_vector(0.0f, 0.0f, 1.0f);
     Matrix3f att_to_rot_matrix; // rotation from the target body frame to the inertial frame.
     att_to_quat.rotation_matrix(att_to_rot_matrix);
-    Vector3f att_to_thrust_vec = att_to_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
+    Vector3f att_to_thrust_vec = att_to_rot_matrix*thrust_unit_vector;
 
     Matrix3f att_from_rot_matrix; // rotation from the current body frame to the inertial frame.
     att_from_quat.rotation_matrix(att_from_rot_matrix);
-    Vector3f att_from_thrust_vec = att_from_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
+    Vector3f att_from_thrust_vec = att_from_rot_matrix*thrust_unit_vector;
 
     // the cross product of the desired and target thrust vector defines the rotation vector
     Vector3f thrust_vec_cross = att_from_thrust_vec % att_to_thrust_vec;
@@ -598,7 +599,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     // Normalize the thrust rotation vector
     float thrust_vector_length = thrust_vec_cross.length();
     if(is_zero(thrust_vector_length) || is_zero(thrust_vec_dot)){
-        thrust_vec_cross = Vector3f(0,0,1);
+        thrust_vec_cross = thrust_unit_vector;
         thrust_vec_dot = 0.0f;
     }else{
         thrust_vec_cross /= thrust_vector_length;
