@@ -1309,7 +1309,14 @@ void QuadPlane::update_transition(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         assisted_flight = true;
-        hold_hover(assist_climb_rate_cms());
+
+        // do not allow a climb on the quad motors during transition
+        // a climb would add load to the airframe, and prolongs the
+        // transition
+        const float climb_rate_cms = MIN(assist_climb_rate_cms(), 0.0f);
+        hold_hover(climb_rate_cms);
+        motors_output();
+
         last_throttle = motors->get_throttle();
 
         // reset integrators while we are below target airspeed as we
