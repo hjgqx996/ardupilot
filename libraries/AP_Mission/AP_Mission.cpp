@@ -299,7 +299,7 @@ bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
 bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 {
     // NAV commands all have ids below MAV_CMD_NAV_LAST except NAV_SET_YAW_SPEED
-    return (cmd.id <= MAV_CMD_NAV_LAST || cmd.id == MAV_CMD_NAV_SET_YAW_SPEED);
+    return (cmd.id <= MAV_CMD_NAV_LAST || cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) || (cmd.id == MAV_CMD_NAV_VTOL_LAND_APPROACH);
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -806,6 +806,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         copy_location = true;
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND_APPROACH:
+        copy_location = true;
+        cmd.p1 = 0;
+        break;
+
     case MAV_CMD_NAV_VTOL_LAND:
         copy_location = true;
         break;
@@ -1263,6 +1268,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_VTOL_LAND_APPROACH:
         copy_location = true;
         break;
 
