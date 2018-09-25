@@ -1177,6 +1177,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
+    AP_GROUPINFO("LAND_REQ", 14, ParametersG2, land_heading_requirement, 270),
+
     AP_GROUPEND
 };
 

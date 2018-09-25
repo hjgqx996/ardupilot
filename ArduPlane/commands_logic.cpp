@@ -90,6 +90,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_altitude_wait(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND_APPROACH:
+        do_landing_vtol_approach(cmd);
+        break;
+
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         crash_state.is_crashed = false;
         return quadplane.do_vtol_takeoff(cmd);
@@ -289,6 +293,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
                 height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(), rangefinder_state.in_range);
         }
 
+    case MAV_CMD_NAV_VTOL_LAND_APPROACH:
+        return verify_landing_vtol_approach(cmd);
+
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlim();
 
@@ -459,6 +466,15 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         }
     }
 #endif
+}
+
+void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
+{
+    do_loiter_to_alt(cmd);
+
+    landing_s.approach_stage = LOITER_TO_ALT;
+
+    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
@@ -1028,6 +1044,57 @@ void Plane::exit_mission_callback()
         set_mode(RTL, MODE_REASON_MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
+}
+
+bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
+{
+    switch (landing_s.approach_stage) {
+        case LOITER_TO_ALT:
+            if (verify_loiter_to_alt()) {
+                Vector3f wind = ahrs.wind_estimate();
+                landing_s.approach_direction = (degrees(atan2f(-wind.y, -wind.x)));
+                gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %f", (double)landing_s.approach_direction);
+                // select target approach direction
+                // select detransition distance (add in extra distance if the approach does not fit in the required space)
+                // validate turn
+                landing_s.approach_stage = WAIT_FOR_BREAKOUT;
+            }
+            break;
+        case WAIT_FOR_BREAKOUT:
+            {
+                const float breakout_direction = radians(wrap_180(landing_s.approach_direction + g2.land_heading_requirement));
+
+                nav_controller->update_loiter(cmd.content.location, aparm.loiter_radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
+
+                // breakout when within 5 degrees of the opposite direction
+                if (fabsf(ahrs.yaw - breakout_direction) < radians(5.0f)) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Starting approach path");
+                    landing_s.approach_stage = APPROACH_LINE;//MAX_BANK;
+                }
+
+                break;
+            }
+        case APPROACH_LINE:
+            {
+                // project an apporach path
+                Location start, end;
+                memcpy(&start, &cmd.content.location, sizeof(Location));
+                memcpy(&end,   &cmd.content.location, sizeof(Location));
+
+                location_update(start, landing_s.approach_direction + 180, 1e3f);
+                location_update(end, landing_s.approach_direction, 1e3f);
+
+                nav_controller->update_waypoint(start, end);
+
+                // check if we should move on to the next waypoint
+                Location breakout_loc;
+                memcpy(&breakout_loc, &cmd.content.location, sizeof(Location));
+                location_update(breakout_loc, landing_s.approach_direction + 180, quadplane.stopping_distance());
+                return location_passed_point(current_loc, start, breakout_loc);
+            }
+    }
+
+    return false;
 }
 
 bool Plane::verify_loiter_heading(bool init)
