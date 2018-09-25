@@ -545,6 +545,8 @@ public:
 #endif
 
     AP_Int32 flight_options;
+
+    AP_Float land_heading_requirement;
 };
 
 extern const AP_Param::Info var_info[];
