@@ -18,7 +18,7 @@ static const luaL_Reg gcs_functions[] =
 
 int lua_servo_set_output_pwm(lua_State *state) {
     int servo_function = luaL_checkinteger(state, -2);
-    int output_value = luaL_checknumber(state, -1);
+    uint16_t output_value = luaL_checknumber(state, -1);
 
     // range check the output function
     if ((servo_function < SRV_Channel::Aux_servo_function_t::k_scripting1) ||
@@ -26,7 +26,7 @@ int lua_servo_set_output_pwm(lua_State *state) {
         return luaL_error(state, "Servo function (%d) is not a scriptable output", servo_function);
     }
 
-    if (output_value > UINT16_MAX) {
+    if (output_value >= UINT16_MAX) {
         return luaL_error(state, "Servo range (%d) is out of range", output_value);
     }
 
