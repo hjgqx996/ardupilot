@@ -375,5 +375,7 @@ void lua_scripts::run(void) {
             hal.scheduler->delay(10000);
         }
 
+    luaL_error(L, "MUST PANIC");
+
     }
 }
