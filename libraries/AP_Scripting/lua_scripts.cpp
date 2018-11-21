@@ -369,11 +369,13 @@ void lua_scripts::run(void) {
             const uint32_t runEnd = AP_HAL::micros();
             const uint32_t endMem = hal.util->available_memory();
             gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %d Mem: %d", runEnd - loadEnd, startMem - endMem);
+            hal.console->printf("Memory: %d.%d ", lua_gc(L, LUA_GCCOUNT, 0), lua_gc(L, LUA_GCCOUNTB, 0));
 
         } else {
             gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             hal.scheduler->delay(10000);
         }
 
+    luaL_error(L, "MUST PANIC");
     }
 }
