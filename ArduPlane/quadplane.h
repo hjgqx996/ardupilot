@@ -473,6 +473,10 @@ private:
         OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
     };
 
+    AP_Float maximum_takeoff_time;
+    AP_Float maximum_takeoff_airspeed;
+    uint32_t takeoff_start_time_ms;
+
     /*
       return true if current mission item is a vtol takeoff
      */

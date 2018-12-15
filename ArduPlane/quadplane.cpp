@@ -2284,6 +2284,27 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (!available()) {
         return true;
     }
+
+    const uint32_t now = millis();
+
+    // reset takeoff start time if we aren't armed, as we won't have made any progress
+    if (!hal.util->get_soft_armed()) {
+        takeoff_start_time_ms = now;
+    }
+
+    // check for failure conditions
+    if (is_positive(maximum_takeoff_time) && ((now - takeoff_start_time_ms)) > (uint16_t)(maximum_takeoff_time*1000.0f)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
+        plane.set_mode(QLAND, MODE_REASON_VTOL_FAILED_TAKEOFF);
+        return false;
+    }
+
+    if (is_positive(maximum_takeoff_airspeed) && (plane.airspeed.get_airspeed() > maximum_takeoff_airspeed)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff, excessive wind");
+        plane.set_mode(QLAND, MODE_REASON_VTOL_FAILED_TAKEOFF);
+        return false;
+    }
+
     if (plane.current_loc.alt < plane.next_WP_loc.alt) {
         return false;
     }
