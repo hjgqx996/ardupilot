@@ -402,6 +402,24 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
+    // @Param: TKOFF_TIME_LIM
+    // @DisplayName: Takeoff time limit
+    // @Description: Time limit a takeoff must have completed in, otherwise the vehicle will switch to QLAND. If set to 0 there is no limit on takeoff time.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 5
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_TIME_LIM", 9, QuadPlane, maximum_takeoff_time, 0),
+
+    // @Param: TKOFF_ARSP_LIM
+    // @DisplayName: Takeoff airspeed limit
+    // @Description: Airspeed limit during takeoff. If the airspeed exceeds this level the vehicle will switch to QLAND. This is useful for ensuring that you don't takeoff into excessively strong wind. If set to 0 there is no limit on airspeed during takeoff.
+    // @Units: m/s
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_ARSP_LIM", 10, QuadPlane, maximum_takeoff_airspeed, 0),
+
     AP_GROUPEND
 };
 
@@ -2196,6 +2214,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     loc.lat = 0;
     loc.lng = 0;
     plane.set_next_WP(loc);
+
+    takeoff_start_time_ms = millis();
+
     if (options & OPTION_RESPECT_TAKEOFF_FRAME) {
         if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything
