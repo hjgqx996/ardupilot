@@ -609,10 +609,12 @@ void Plane::adjust_nav_pitch_throttle(void)
  */
 void Plane::update_load_factor(void)
 {
+    uint8_t flags = 0;
     float demanded_roll = fabsf(nav_roll_cd*0.01f);
     if (demanded_roll > 85) {
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
+        flags |= (1 << 3);
     }
     aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
@@ -623,6 +625,7 @@ void Plane::update_load_factor(void)
           within LEVEL_ROLL_LIMIT
          */
         roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        flags |= (1 << 0);
     }
     
     if (!aparm.stall_prevention) {
@@ -641,6 +644,7 @@ void Plane::update_load_factor(void)
 
     float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
     if (max_load_factor <= 1) {
+        flags |= (1 << 1);
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
@@ -658,5 +662,16 @@ void Plane::update_load_factor(void)
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
+        flags |= (1 << 2);
     }    
+    DataFlash_Class::instance()->Log_Write("PLF",
+                                           "TimeUS,LF,MLF,LimitCD,Flags,RD,RC",
+                                           "QffeBfe", // fmt
+                                           AP_HAL::micros64(),
+                                           aerodynamic_load_factor,
+                                           max_load_factor,
+                                           roll_limit_cd,
+                                           flags,
+                                           demanded_roll,
+                                           nav_roll_cd);
 }
