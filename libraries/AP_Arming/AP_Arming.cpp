@@ -86,7 +86,13 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
-    // index 4 was VOLT_MIN, moved to AP_BattMonitor
+    // @Param: SAFE_DIS
+    // @DisplayName: Disarm forces safety switch
+    // @Description: When set the aircraft disarming will automatically force the safety switch to the safe state
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("SAFE_DIS", 8,     AP_Arming, _disarm_forces_safety, 0),
+
     AP_GROUPEND
 };
 
@@ -746,6 +752,10 @@ bool AP_Arming::disarm()
     armed = false;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+
+    if (_disarm_forces_safety) {
+        hal.rcout->force_safety_on();
+    }
 
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.

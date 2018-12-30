@@ -86,6 +86,7 @@ protected:
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
     AP_Int32                 _required_mission_items;
+    AP_Int8                 _disarm_forces_safety;
 
     // internal members
     bool                    armed:1;
