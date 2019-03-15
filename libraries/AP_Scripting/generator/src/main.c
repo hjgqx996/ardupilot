@@ -598,7 +598,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
     case TYPE_NONE:
       return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
     case TYPE_USERDATA:
-      fprintf(source, "%s%s data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
+      fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
       break;
   }
 
@@ -775,6 +775,17 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n\n");
   fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n", data->name);
+
+  // extract the arguments
+  arg = method->arguments;
+  arg_count = 2;
+  while (arg != NULL) {
+    emit_checker(arg->type, arg_count, "    ", "argument");
+    arg = arg->next;
+    arg_count++;
+  }
+
+
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
       fprintf(source, "    const bool data = AP::%s()%s%s(\n", data->name, dereference, method->name);
@@ -796,32 +807,15 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   arg = method->arguments;
   arg_count = 2;
   while (arg != NULL) {
-    fprintf(source, "            ");
-    switch (arg->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "lua_toboolean(L, %d)", arg_count);
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "lua_tonumber(L, %d)", arg_count);
-        break;
-      case TYPE_INT32_T:
-        fprintf(source, "lua_tointeger(L, %d)", arg_count);
-        break;
-      case TYPE_USERDATA:
-        // userdata's are always a pointer, pop it out one level
-        fprintf(source, "*check_%s(L, %d)", arg->type.data.userdata_name, arg_count);
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't pass an empty argument to a method");
-        break;
-    }
+    fprintf(source, "            data_%d", arg_count);
     arg = arg->next;
     if (arg != NULL) {
-      fprintf(source, ",\n");
+            fprintf(source, ",\n");
     }
     arg_count++;
   }
   fprintf(source, ");\n\n");
+
 
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:

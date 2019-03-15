@@ -189,7 +189,7 @@ int Location_get_vector_from_origin_NEU(lua_State *L) {
     }
 
     Location * ud = check_Location(L, 1);
-    Vector3f data_2 = *check_Vector3f(L, 2);
+    Vector3f & data_2 = *check_Vector3f(L, 2);
     const bool data = ud->get_vector_from_origin_NEU(
             data_2);
 
@@ -226,7 +226,7 @@ int Location_get_distance(lua_State *L) {
     }
 
     Location * ud = check_Location(L, 1);
-    Location data_2 = *check_Location(L, 2);
+    Location & data_2 = *check_Location(L, 2);
     const float data = ud->get_distance(
             data_2);
 
@@ -280,8 +280,9 @@ int ahrs_get_position(lua_State *L) {
     }
 
     luaL_checkudata(L, 1, "ahrs");
+    Location & data_2 = *check_Location(L, 2);
     const bool data = AP::ahrs().get_position(
-            *check_Location(L, 2));
+            data_2);
 
     lua_pushboolean(L, data);
     return 1;
