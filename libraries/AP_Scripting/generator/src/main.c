@@ -126,6 +126,10 @@ char * next_token(void) {
   state.token = strtok(NULL, " ");
   state.token_num++;
   trace(TRACE_TOKENS, "Token %d:%d %s", state.line_num, state.token_num, state.token);
+  if ((state.token!= NULL) && (strcmp(state.token, keyword_comment) == 0)) {
+    trace(TRACE_TOKENS, "Detected comment %d", state.line_num);
+    while (next_token()) {} // burn all the symbols
+  }
   return state.token;
 }
 
