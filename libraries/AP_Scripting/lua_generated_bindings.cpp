@@ -188,8 +188,10 @@ int Location_get_vector_from_origin_NEU(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    const bool data = check_Location(L, 1)->get_vector_from_origin_NEU(
-            *check_Vector3f(L, 2));
+    Location * ud = check_Location(L, 1);
+    Vector3f data_2 = *check_Vector3f(L, 2);
+    const bool data = ud->get_vector_from_origin_NEU(
+            data_2);
 
     lua_pushboolean(L, data);
     return 1;
@@ -203,9 +205,14 @@ int Location_offset(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    check_Location(L, 1)->offset(
-            lua_tonumber(L, 2),
-            lua_tonumber(L, 3));
+    Location * ud = check_Location(L, 1);
+    const float data_2 = luaL_checknumber(L, 2);
+    luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "argument out of range");
+    const float data_3 = luaL_checknumber(L, 3);
+    luaL_argcheck(L, ((data_3 >= -FLT_MAX) && (data_3 <= FLT_MAX)), 3, "argument out of range");
+    ud->offset(
+            data_2,
+            data_3);
 
     return 0;
 }
@@ -218,8 +225,10 @@ int Location_get_distance(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    const float data = check_Location(L, 1)->get_distance(
-            *check_Location(L, 2));
+    Location * ud = check_Location(L, 1);
+    Location data_2 = *check_Location(L, 2);
+    const float data = ud->get_distance(
+            data_2);
 
     lua_pushnumber(L, data);
     return 1;

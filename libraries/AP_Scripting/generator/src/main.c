@@ -313,7 +313,12 @@ enum type_restriction {
   TYPE_OPTIONAL,
 };
 
-int parse_type(struct type *type, const enum type_restriction restrictions) {
+enum range_check_type {
+  RANGE_CHECK_NONE,
+  RANGE_CHECK_MANDATORY,
+};
+
+int parse_type(struct type *type, const enum type_restriction restrictions, enum range_check_type range_type) {
   char *data_type = next_token();
 
   if (data_type == NULL) {
@@ -344,6 +349,21 @@ int parse_type(struct type *type, const enum type_restriction restrictions) {
     type->type = TYPE_USERDATA;
     string_copy(&(type->data.userdata_name), data_type);
   }
+
+  if (range_type != RANGE_CHECK_NONE) {
+    switch (type->type) {
+      case TYPE_FLOAT:
+      case TYPE_INT32_T:
+              printf("loading a range");
+        type->range = parse_range_check();
+        break;
+      case TYPE_BOOLEAN:
+      case TYPE_NONE:
+      case TYPE_USERDATA:
+        // no sane range checks, so we can ignore this
+        break;
+    }
+  }
   return TRUE;
 }
 
@@ -371,7 +391,7 @@ void handle_userdata_field(struct userdata *data) {
   field->line = state.line_num;
   string_copy(&(field->name), field_name);
 
-  parse_type(&(field->type), TYPE_REQUIRED);
+  parse_type(&(field->type), TYPE_REQUIRED, RANGE_CHECK_NONE);
   field->access_flags = parse_access_flags(&(field->type));
 }
 
@@ -399,11 +419,14 @@ void handle_method(enum trace_level traceType, char *parent_name, struct method 
   string_copy(&(method->name), name);
   method->line = state.line_num;
 
-  parse_type(&(method->return_type), TYPE_REQUIRED);
+  parse_type(&(method->return_type), TYPE_REQUIRED, RANGE_CHECK_NONE);
 
   // iterate the arguments
   struct type arg_type = {};
-  while (parse_type(&arg_type, TYPE_OPTIONAL)) {
+  while (parse_type(&arg_type, TYPE_OPTIONAL, RANGE_CHECK_MANDATORY)) {
+    if (arg_type.type == TYPE_NONE) {
+      error(ERROR_USERDATA, "Can't pass an empty argument to a method");
+    }
     struct argument * arg = allocate(sizeof(struct argument));
     memcpy(&(arg->type), &arg_type, sizeof(struct type));
     arg->next = method->arguments;
@@ -575,16 +598,16 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
     case TYPE_NONE:
       return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
     case TYPE_USERDATA:
-      error(ERROR_USERDATA, "Userdata does not currently support accss to userdata field's");
+      fprintf(source, "%s%s data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
       break;
   }
 
   if (t.range != NULL) {
-    fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), 2, \"%s out of range\");\n",
+    fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), %d, \"%s out of range\");\n",
             indentation,
             arg_number, t.range->low,
             arg_number, t.range->high,
-            name);
+            arg_number, name);
   }
 }
 
@@ -656,49 +679,45 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   fprintf(source, "    } else if (args < %d) {\n", arg_count);
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n\n");
+
+  // extract the userdata
+  fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->name);
+
+  // extract the arguments
+  arg = method->arguments;
+  arg_count = 2;
+  while (arg != NULL) {
+    emit_checker(arg->type, arg_count, "    ", "argument");
+    arg = arg->next;
+    arg_count++;
+  }
+
+  // we have all the types checked, emit the call
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = check_%s(L, 1)->%s(\n", data->name, method->name);
+      fprintf(source, "    const bool data = ud->%s(\n", method->name);
       break;
     case TYPE_FLOAT:
-      fprintf(source, "    const float data = check_%s(L, 1)->%s(\n", data->name, method->name);
+      fprintf(source, "    const float data = ud->%s(\n", method->name);
       break;
     case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = check_%s(L, 1)->%s(\n", data->name, method->name);
+      fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
       break;
     case TYPE_USERDATA:
       error(ERROR_USERDATA, "Userdata methods may not currently return a userdata object");
       break;
     case TYPE_NONE:
-      fprintf(source, "    check_%s(L, 1)->%s(\n", data->name, method->name);
+      fprintf(source, "    ud->%s(\n", method->name);
       break;
   }
 
   arg = method->arguments;
   arg_count = 2;
   while (arg != NULL) {
-    fprintf(source, "            ");
-    switch (arg->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "lua_toboolean(L, %d)", arg_count);
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "lua_tonumber(L, %d)", arg_count);
-        break;
-      case TYPE_INT32_T:
-        fprintf(source, "lua_tointeger(L, %d)", arg_count);
-        break;
-      case TYPE_USERDATA:
-        // userdata's are always a pointer, pop it out one level
-        fprintf(source, "*check_%s(L, %d)", arg->type.data.userdata_name, arg_count);
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't pass an empty argument to a method");
-        break;
-    }
+    fprintf(source, "            data_%d", arg_count);
     arg = arg->next;
     if (arg != NULL) {
-      fprintf(source, ",\n");
+            fprintf(source, ",\n");
     }
     arg_count++;
   }
