@@ -76,7 +76,15 @@ enum access_type {
   ACCESS_REFERENCE,
 };
 
+struct range_check {
+  // store the requested range check as a string
+  // we will check that it's a numeric form of some type, but keep it as a string rather then a casted version
+  char *low;
+  char *high;
+};
+
 struct type {
+  struct range_check *range;
   enum field_type type;
   enum access_type access;
   union {
@@ -198,20 +206,12 @@ void handle_header(void) {
   }
 }
 
-struct range_check {
-  // store the requested range check as a string
-  // we will check that it's a numeric form of some type, but keep it as a string rather then a casted version
-  char *low;
-  char *high;
-};
-
 struct userdata_field {
   struct userdata_field * next;
   char * name;
   struct type type; // field type, points to a string
   int line; // line declared on
   unsigned int access_flags;
-  struct range_check *range;
 };
 
 struct argument {
@@ -267,7 +267,7 @@ struct range_check *parse_range_check(void) {
 
 // parses one or more access flags, leaves the token on the first non access token
 // throws an error if no flags were found
-unsigned int parse_access_flags(const struct type * type, struct range_check **check) {
+unsigned int parse_access_flags(struct type * type) {
   unsigned int flags = 0;
 
   next_token();
@@ -281,7 +281,7 @@ unsigned int parse_access_flags(const struct type * type, struct range_check **c
       switch (type->type) {
         case TYPE_FLOAT:
         case TYPE_INT32_T:
-          *check = parse_range_check();
+          type->range = parse_range_check();
           break;
         case TYPE_USERDATA:
         case TYPE_BOOLEAN:
@@ -372,7 +372,7 @@ void handle_userdata_field(struct userdata *data) {
   string_copy(&(field->name), field_name);
 
   parse_type(&(field->type), TYPE_REQUIRED);
-  field->access_flags = parse_access_flags(&(field->type), &(field->range));
+  field->access_flags = parse_access_flags(&(field->type));
 }
 
 void handle_method(enum trace_level traceType, char *parent_name, struct method **methods) {
@@ -593,11 +593,11 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         break;
       case TYPE_FLOAT:
         fprintf(source, "            const float data = luaL_checknumber(L, 2);\n");
-        emit_range_check(field->range, field->name, "data", "            ");
+        emit_range_check(field->type.range, field->name, "data", "            ");
         break;
       case TYPE_INT32_T:
         fprintf(source, "            const int32_t data = luaL_checkinteger(L, 2);\n");
-        emit_range_check(field->range, field->name, "data", "            ");
+        emit_range_check(field->type.range, field->name, "data", "            ");
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't write a NONE field");
