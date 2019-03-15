@@ -243,8 +243,6 @@ void string_copy(char **dest, const char * src) {
 }
 
 struct range_check *parse_range_check(void) {
-  char * end;
-
   char * low = next_token();
   if (low == NULL) {
     error(ERROR_USERDATA, "Missing low value for a range check");
@@ -252,24 +250,12 @@ struct range_check *parse_range_check(void) {
 
   trace(TRACE_TOKENS, "Range check: Low: %s", low);
 
-  // attempt to convert just to prove that it can be done
-  strtof(low, &end);
-  if (end == NULL) {
-    error(ERROR_USERDATA, "Invlaid low value %s", low);
-  }
-
   char * high  = next_token();
   if (high == NULL) {
     error(ERROR_USERDATA, "Missing high value for a range check");
   }
 
   trace(TRACE_TOKENS, "Range check: High: %s", high);
-
-  // attempt to convert just to prove that it can be done
-  strtof(high, &end);
-  if (end == NULL) {
-    error(ERROR_USERDATA, "Invlaid high value %s", high);
-  }
 
   struct range_check *check = allocate(sizeof(struct range_check));
 
