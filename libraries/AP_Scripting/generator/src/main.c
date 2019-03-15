@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
 #include <readline/readline.h>
-#include <readline/history.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -558,6 +558,36 @@ void emit_range_check(const struct range_check *range, const char * name, const 
           name);
 }
 
+void emit_checker(const struct type t, int arg_number, const char *indentation, const char *name) {
+  assert(indentation != NULL);
+
+  // consider the arg numberto provide both the name, and the stack position of the variable
+  switch (t.type) {
+    case TYPE_BOOLEAN:
+      fprintf(source, "%sconst bool data_%d = lua_toboolean(L, %d);\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_FLOAT:
+      fprintf(source, "%sconst float data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_INT32_T:
+      fprintf(source, "%sconst int32_t data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_NONE:
+      return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
+    case TYPE_USERDATA:
+      error(ERROR_USERDATA, "Userdata does not currently support accss to userdata field's");
+      break;
+  }
+
+  if (t.range != NULL) {
+    fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), 2, \"%s out of range\");\n",
+            indentation,
+            arg_number, t.range->low,
+            arg_number, t.range->high,
+            name);
+  }
+}
+
 void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
   fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, field->name);
   fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->name);
@@ -587,26 +617,8 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
     fprintf(source, "        case 2: {\n");
-    switch (field->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "            const bool data = lua_toboolean(L, 2);\n");
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "            const float data = luaL_checknumber(L, 2);\n");
-        emit_range_check(field->type.range, field->name, "data", "            ");
-        break;
-      case TYPE_INT32_T:
-        fprintf(source, "            const int32_t data = luaL_checkinteger(L, 2);\n");
-        emit_range_check(field->type.range, field->name, "data", "            ");
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't write a NONE field");
-        break;
-      case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support accss to userdata field's");
-        break;
-    }
-    fprintf(source, "            ud->%s = data;\n", field->name);
+    emit_checker(field->type, 2, "            ", field->name);
+    fprintf(source, "            ud->%s = data_2;\n", field->name);
     fprintf(source, "            return 0;\n");
     fprintf(source, "         }\n");
   }

@@ -38,9 +38,9 @@ int Vector3f_z(lua_State *L) {
             lua_pushnumber(L, ud->z);
             return 1;
         case 2: {
-            const float data = luaL_checknumber(L, 2);
-            luaL_argcheck(L, ((data >= -FLT_MAX) && (data <= FLT_MAX)), 2, "z out of range");
-            ud->z = data;
+            const float data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "z out of range");
+            ud->z = data_2;
             return 0;
          }
         default:
@@ -55,9 +55,9 @@ int Vector3f_y(lua_State *L) {
             lua_pushnumber(L, ud->y);
             return 1;
         case 2: {
-            const float data = luaL_checknumber(L, 2);
-            luaL_argcheck(L, ((data >= -FLT_MAX) && (data <= FLT_MAX)), 2, "y out of range");
-            ud->y = data;
+            const float data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "y out of range");
+            ud->y = data_2;
             return 0;
          }
         default:
@@ -72,9 +72,9 @@ int Vector3f_x(lua_State *L) {
             lua_pushnumber(L, ud->x);
             return 1;
         case 2: {
-            const float data = luaL_checknumber(L, 2);
-            luaL_argcheck(L, ((data >= -FLT_MAX) && (data <= FLT_MAX)), 2, "x out of range");
-            ud->x = data;
+            const float data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "x out of range");
+            ud->x = data_2;
             return 0;
          }
         default:
@@ -89,8 +89,8 @@ int Location_loiter_xtrack(lua_State *L) {
             lua_pushinteger(L, ud->loiter_xtrack);
             return 1;
         case 2: {
-            const bool data = lua_toboolean(L, 2);
-            ud->loiter_xtrack = data;
+            const bool data_2 = lua_toboolean(L, 2);
+            ud->loiter_xtrack = data_2;
             return 0;
          }
         default:
@@ -105,8 +105,8 @@ int Location_origin_alt(lua_State *L) {
             lua_pushinteger(L, ud->origin_alt);
             return 1;
         case 2: {
-            const bool data = lua_toboolean(L, 2);
-            ud->origin_alt = data;
+            const bool data_2 = lua_toboolean(L, 2);
+            ud->origin_alt = data_2;
             return 0;
          }
         default:
@@ -121,8 +121,8 @@ int Location_terrain_alt(lua_State *L) {
             lua_pushinteger(L, ud->terrain_alt);
             return 1;
         case 2: {
-            const bool data = lua_toboolean(L, 2);
-            ud->terrain_alt = data;
+            const bool data_2 = lua_toboolean(L, 2);
+            ud->terrain_alt = data_2;
             return 0;
          }
         default:
@@ -137,8 +137,8 @@ int Location_relative_alt(lua_State *L) {
             lua_pushinteger(L, ud->relative_alt);
             return 1;
         case 2: {
-            const bool data = lua_toboolean(L, 2);
-            ud->relative_alt = data;
+            const bool data_2 = lua_toboolean(L, 2);
+            ud->relative_alt = data_2;
             return 0;
          }
         default:
@@ -153,9 +153,9 @@ int Location_lng(lua_State *L) {
             lua_pushinteger(L, ud->lng);
             return 1;
         case 2: {
-            const int32_t data = luaL_checkinteger(L, 2);
-            luaL_argcheck(L, ((data >= -1800000000) && (data <= 1800000000)), 2, "lng out of range");
-            ud->lng = data;
+            const int32_t data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((data_2 >= -1800000000) && (data_2 <= 1800000000)), 2, "lng out of range");
+            ud->lng = data_2;
             return 0;
          }
         default:
@@ -170,9 +170,9 @@ int Location_lat(lua_State *L) {
             lua_pushinteger(L, ud->lat);
             return 1;
         case 2: {
-            const int32_t data = luaL_checkinteger(L, 2);
-            luaL_argcheck(L, ((data >= -900000000) && (data <= 900000000)), 2, "lat out of range");
-            ud->lat = data;
+            const int32_t data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((data_2 >= -900000000) && (data_2 <= 900000000)), 2, "lat out of range");
+            ud->lat = data_2;
             return 0;
          }
         default:
