@@ -19,6 +19,7 @@ char keyword_write[]     = "write";
 char keyword_boolean[] = "boolean";
 char keyword_float[]   = "float";
 char keyword_int32_t[] = "int32_t";
+char keyword_string[]  = "string";
 char keyword_void[]    = "void";
 
 enum error_codes {
@@ -68,6 +69,7 @@ enum field_type {
   TYPE_FLOAT,
   TYPE_INT32_T,
   TYPE_NONE,
+  TYPE_STRING,
   TYPE_USERDATA,
 };
 
@@ -285,6 +287,7 @@ unsigned int parse_access_flags(struct type * type) {
           break;
         case TYPE_USERDATA:
         case TYPE_BOOLEAN:
+        case TYPE_STRING:
           // a range check is illogical
           break;
         case TYPE_NONE:
@@ -342,6 +345,8 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
     type->type = TYPE_FLOAT;
   } else if (strcmp(data_type, keyword_int32_t) == 0) {
     type->type = TYPE_INT32_T;
+  } else if (strcmp(data_type, keyword_string) == 0) {
+    type->type = TYPE_STRING;
   } else if (strcmp(data_type, keyword_void) == 0) {
     type->type = TYPE_NONE;
   } else {
@@ -359,6 +364,7 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
         break;
       case TYPE_BOOLEAN:
       case TYPE_NONE:
+      case TYPE_STRING:
       case TYPE_USERDATA:
         // no sane range checks, so we can ignore this
         break;
@@ -510,7 +516,7 @@ void handle_singleton(void) {
     error(ERROR_SINGLETON, "Expected an access type for userdata %s", name);
   }
   if (strcmp(type, keyword_method) != 0) {
-    error(ERROR_SINGLETON, "Singletons only support method access types");
+    error(ERROR_SINGLETON, "Singletons only support method access types (got %s)", type);
   }
 
   // method name
@@ -597,6 +603,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       break;
     case TYPE_NONE:
       return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
+    case TYPE_STRING:
+      fprintf(source, "%sconst char * data_%d = luaL_checkstring(L, %d);\n", indentation, arg_number, arg_number);
+      break;
     case TYPE_USERDATA:
       fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
       break;
@@ -630,6 +639,9 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
+        break;
+      case TYPE_STRING:
+        fprintf(source, "            lua_pushstring(L, ud->%s);\n", field->name);
         break;
       case TYPE_USERDATA:
         error(ERROR_USERDATA, "Userdata does not currently support accss to userdata field's");
@@ -703,6 +715,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_INT32_T:
       fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
       break;
+    case TYPE_STRING:
+      fprintf(source, "    const char * data = ud->%s(\n", method->name);
+      break;
     case TYPE_USERDATA:
       error(ERROR_USERDATA, "Userdata methods may not currently return a userdata object");
       break;
@@ -732,6 +747,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       break;
     case TYPE_INT32_T:
       fprintf(source, "    lua_pushinteger(L, data);\n");
+      break;
+    case TYPE_STRING:
+      fprintf(source, "    lua_pushstring(L, data);\n");
       break;
     case TYPE_USERDATA:
       error(ERROR_INTERNAL, "Can't return a userdata currently");
@@ -796,6 +814,9 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
     case TYPE_INT32_T:
       fprintf(source, "    const int32_t data = AP::%s()%s%s(\n", data->name, dereference, method->name);
       break;
+    case TYPE_STRING:
+      fprintf(source, "    const char * data = AP::%s()%s%s(\n", data->name, dereference, method->name);
+      break;
     case TYPE_USERDATA:
       fprintf(source, "    const %s &data = AP::%s()%s%s(\n", method->return_type.data.userdata_name, data->name, dereference, method->name);
       break;
@@ -826,6 +847,9 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
       break;
     case TYPE_INT32_T:
       fprintf(source, "    lua_pushinteger(L, data);\n");
+      break;
+    case TYPE_STRING:
+      fprintf(source, "    lua_pushstring(L, data);\n");
       break;
     case TYPE_USERDATA:
       // userdatas must allocate a new container to return

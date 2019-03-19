@@ -1,5 +1,6 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
+#include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/Location.h>
@@ -254,6 +255,22 @@ const luaL_Reg Location_meta[] = {
     {NULL, NULL}
 };
 
+int notify_play_tune(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    luaL_checkudata(L, 1, "notify");
+    const char * data_2 = luaL_checkstring(L, 2);
+    AP::notify().play_tune(
+            data_2);
+
+    return 0;
+}
+
 int ahrs_get_home(lua_State *L) {
     const int args = lua_gettop(L);
     if (args > 1) {
@@ -288,6 +305,11 @@ int ahrs_get_position(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg notify_meta[] = {
+    {"play_tune", notify_play_tune},
+    {NULL, NULL}
+};
+
 const luaL_Reg ahrs_meta[] = {
     {"get_home", ahrs_get_home},
     {"get_position", ahrs_get_position},
@@ -306,6 +328,7 @@ const struct singleton_fun {
     const char *name;
     const luaL_Reg *reg;
 } singleton_fun[] = {
+    {"notify", notify_meta},
     {"ahrs", ahrs_meta},
 };
 
@@ -336,6 +359,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "notify",
     "ahrs",
 };
 
