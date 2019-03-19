@@ -184,5 +184,5 @@ private:
 };
 
 namespace AP {
-    AP_Notify *notify();
+    AP_Notify &notify();
 };

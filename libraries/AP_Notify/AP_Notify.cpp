@@ -369,9 +369,9 @@ void AP_Notify::send_text(const char *str)
 
 namespace AP {
 
-AP_Notify *notify()
+AP_Notify &notify()
 {
-    return AP_Notify::get_singleton();
+    return *AP_Notify::get_singleton();
 }
 
 };
