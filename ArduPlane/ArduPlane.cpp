@@ -305,6 +305,12 @@ void Plane::one_second_loop()
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+
+#if HAL_WITH_IO_MCU
+    if (should_log(MASK_LOG_PM)) {
+        iomcu.log();
+    }
+#endif
 }
 
 void Plane::compass_save()
