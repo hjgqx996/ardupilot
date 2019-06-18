@@ -1438,9 +1438,14 @@ void GCS_MAVLINK::update_send()
 #endif
 
     const uint32_t start = AP_HAL::millis();
-    gcs().set_out_of_time(false);
-    while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
-        if (gcs().out_of_time()) {
+    AP_Scheduler *scheduler = AP_Scheduler::get_singleton();
+    while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages. This should never trigger - should break on the first check in the loop
+        // if we don't have at least 0.25ms remaining before the main loop
+        // wants to fire then don't send a mavlink message. We want to
+        // prioritise the main flight control loop over communications
+        if (!hal.scheduler->in_delay_callback() &&
+            !AP_BoardConfig::in_sensor_config_error() &&
+            ((scheduler != nullptr) && (scheduler->time_available_usec() < 250))) {
             break;
         }
 
