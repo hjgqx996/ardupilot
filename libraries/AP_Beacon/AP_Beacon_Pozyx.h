@@ -14,7 +14,7 @@ class AP_Beacon_Pozyx : public AP_Beacon_Backend
 
 public:
     // constructor
-    AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_manager);
+    AP_Beacon_Pozyx(AP_Beacon &frontend);
 
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() override;

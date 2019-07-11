@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Beacon_Marvelmind.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID 0x0002
@@ -39,12 +40,12 @@ extern const AP_HAL::HAL& hal;
   #define Debug(level, fmt, args ...)
 #endif
 
-AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
+AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend) :
     AP_Beacon_Backend(frontend)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
+    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
+        uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
         last_update_ms = 0;
         parse_state = RECV_HDR; // current state of receive data
         num_bytes_in_block_received = 0; // bytes received

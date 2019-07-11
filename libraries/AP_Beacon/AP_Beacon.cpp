@@ -72,8 +72,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Beacon::AP_Beacon(AP_SerialManager &_serial_manager) :
-    serial_manager(_serial_manager)
+AP_Beacon::AP_Beacon()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
@@ -94,9 +93,9 @@ void AP_Beacon::init(void)
 
     // create backend
     if (_type == AP_BeaconType_Pozyx) {
-        _driver = new AP_Beacon_Pozyx(*this, serial_manager);
+        _driver = new AP_Beacon_Pozyx(*this);
     } else if (_type == AP_BeaconType_Marvelmind) {
-        _driver = new AP_Beacon_Marvelmind(*this, serial_manager);
+        _driver = new AP_Beacon_Marvelmind(*this);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_type == AP_BeaconType_SITL) {
