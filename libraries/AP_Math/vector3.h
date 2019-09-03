@@ -228,6 +228,11 @@ public:
         return (dist_x*dist_x + dist_y*dist_y + dist_z*dist_z);
     }
 
+    // distance from the tip of this vector to another vector, distance_squared is preferred when possible
+    float distance(const Vector3<T> &v) const {
+        return sqrtf(distance_squared(v));
+    }
+
     // distance from the tip of this vector to a line segment specified by two vectors
     float distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const;
 
