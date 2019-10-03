@@ -415,7 +415,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 1
     // @Increment: .1
     // @User: Advanced
-    AP_GROUPINFO("THROTTLE_EXPO", 10, QuadPlane, throttle_expo, 0.2),
+    AP_GROUPINFO("THROTTLE_EXPO", 10, QuadPlane, throttle_expo, 0.0),
 
     // @Param: ACRO_RLL_RATE
     // @DisplayName: QACRO mode roll rate
@@ -983,12 +983,16 @@ float QuadPlane::get_pilot_throttle()
     // normalize to [0,1]
     throttle_in /= plane.channel_throttle->get_range();
 
-    // get hover throttle level [0,1]
-    float thr_mid = motors->get_throttle_hover();
-    float thrust_curve_expo = constrain_float(throttle_expo, 0.0f, 1.0f);
+    if (is_positive(throttle_expo)) {
+        // get hover throttle level [0,1]
+        float thr_mid = motors->get_throttle_hover();
+        float thrust_curve_expo = constrain_float(throttle_expo, 0.0f, 1.0f);
 
-    // this puts mid stick at hover throttle
-    return throttle_curve(thr_mid, thrust_curve_expo, throttle_in);;
+        // this puts mid stick at hover throttle
+        return throttle_curve(thr_mid, thrust_curve_expo, throttle_in);;
+    } else {
+        return throttle_in;
+    }
 }
 
 /*
