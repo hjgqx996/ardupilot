@@ -225,6 +225,10 @@ public:
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
 
+    float get_roll_degrees() const { return degrees(roll); }
+    float get_pitch_degrees() const { return degrees(pitch); }
+    float get_yaw_degrees() const { return degrees(yaw); }
+    
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
     int32_t pitch_sensor;
