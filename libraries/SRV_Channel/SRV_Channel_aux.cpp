@@ -477,6 +477,16 @@ bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint
     return false;
 }
 
+// find first channel that a function is assigned to, return -1 on failure
+int8_t SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function)
+{
+    uint8_t chan;
+    if (!find_channel(function, chan)) {
+        return -1;
+    }
+    return int8_t(chan);
+}
+
 /*
   get a pointer to first auxillary channel for a channel function
 */

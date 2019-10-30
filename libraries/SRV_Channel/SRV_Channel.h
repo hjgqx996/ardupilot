@@ -40,7 +40,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    typedef enum
+    typedef enum ServoFunction
     {
         k_none                  = 0,            ///< disabled
         k_manual                = 1,            ///< manual, just pass-thru the RC in signal
@@ -423,6 +423,9 @@ public:
     // find first channel that a function is assigned to
     static bool find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan);
 
+    // variant of find_channel that returns channel and -1 on failure. Used by Lua scripting
+    static int8_t find_channel(SRV_Channel::Aux_servo_function_t function);
+    
     // find first channel that a function is assigned to, returning SRV_Channel object
     static SRV_Channel *get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan=-1);
 
@@ -486,6 +489,11 @@ public:
 
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
+
+    // singleton for Lua
+    static SRV_Channels *get_singleton(void) {
+        return _singleton;
+    }
 
 private:
     struct {
