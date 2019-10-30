@@ -4,8 +4,20 @@ the LED interface for WS2812 LEDs
 --]]
 
 local num_leds = 16 -- assume 16 LEDs in each strip
-local chan_left = 9 -- LEDs for left wing on channel 9
-local chan_right = 10 -- LEDs for right wing on channel 10
+local chan_left = 0
+local chan_right = 0
+
+-- use SERVOn_FUNCTION 120 and 121 for left and right LEDs
+chan_left = SRV_Channels:find_channel(120)
+chan_right = SRV_Channels:find_channel(121)
+
+gcs:send_text(6, string.format("LEDs: chan_left=" .. tostring(chan_left)))
+gcs:send_text(6, string.format("LEDs: chan_right=" .. tostring(chan_right)))
+
+if chan_left < 0 or chan_right < 0 then
+    gcs:send_text(6, string.format("LEDs: channels not set"))
+    return
+end
 
 -- initialisation code
 serialLED:set_num_LEDs(chan_left,  num_leds)
