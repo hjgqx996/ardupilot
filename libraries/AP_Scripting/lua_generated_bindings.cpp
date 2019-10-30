@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_SerialLED/AP_SerialLED.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
@@ -511,6 +512,23 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int SRV_Channels_find_channel(lua_State *L) {
+    SRV_Channels * ud = SRV_Channels::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "SRV_Channels not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(SRV_Channel::k_none)) && (raw_data_2 <= static_cast<int32_t>(SRV_Channel::k_nr_aux_servo_functions-1))), 2, "argument out of range");
+    const SRV_Channel::ServoFunction data_2 = static_cast<SRV_Channel::ServoFunction>(raw_data_2);
+    const int8_t data = ud->find_channel(
+            data_2);
+
+    lua_pushinteger(L, data);
+    return 1;
+}
 
 static int AP_SerialLED_send(lua_State *L) {
     AP_SerialLED * ud = AP_SerialLED::get_singleton();
@@ -1689,6 +1707,11 @@ static int AP_AHRS_get_roll_degrees(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg SRV_Channels_meta[] = {
+    {"find_channel", SRV_Channels_find_channel},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_SerialLED_meta[] = {
     {"send", AP_SerialLED_send},
     {"set_Rainbow", AP_SerialLED_set_Rainbow},
@@ -1833,6 +1856,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"SRV_Channels", SRV_Channels_meta, NULL},
     {"serialLED", AP_SerialLED_meta, NULL},
     {"vehicle", AP_Vehicle_meta, NULL},
     {"gcs", GCS_meta, NULL},
@@ -1885,6 +1909,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "SRV_Channels",
     "serialLED",
     "vehicle",
     "gcs",
