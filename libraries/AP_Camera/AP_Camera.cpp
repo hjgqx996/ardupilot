@@ -449,18 +449,20 @@ void AP_Camera::take_picture()
 void AP_Camera::update_trigger()
 {
     trigger_pic_cleanup();
-    
-    if (_camera_trigger_logged != _camera_trigger_count) {
-        uint32_t timestamp32 = _feedback_timestamp_us;
-        _camera_trigger_logged = _camera_trigger_count;
 
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        AP_Logger *logger = AP_Logger::get_singleton();
-        if (logger != nullptr) {
-            if (logger->should_log(log_camera_bit)) {
-                uint32_t tdiff = AP_HAL::micros() - timestamp32;
-                uint64_t timestamp = AP_HAL::micros64();
-                logger->Write_Camera(current_loc, timestamp - tdiff);
+    if (using_feedback_pin()) {
+        if (_camera_trigger_logged != _camera_trigger_count) {
+            uint32_t timestamp32 = _feedback_timestamp_us;
+            _camera_trigger_logged = _camera_trigger_count;
+
+            gcs().send_message(MSG_CAMERA_FEEDBACK);
+            AP_Logger *logger = AP_Logger::get_singleton();
+            if (logger != nullptr) {
+                if (logger->should_log(log_camera_bit)) {
+                    uint32_t tdiff = AP_HAL::micros() - timestamp32;
+                    uint64_t timestamp = AP_HAL::micros64();
+                    logger->Write_Camera(current_loc, timestamp - tdiff);
+                }
             }
         }
     }
