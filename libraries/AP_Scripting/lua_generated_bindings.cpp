@@ -522,11 +522,17 @@ static int SRV_Channels_find_channel(lua_State *L) {
     binding_argcheck(L, 2);
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(SRV_Channel::k_none)) && (raw_data_2 <= static_cast<int32_t>(SRV_Channel::k_nr_aux_servo_functions-1))), 2, "argument out of range");
-    const SRV_Channel::ServoFunction data_2 = static_cast<SRV_Channel::ServoFunction>(raw_data_2);
-    const int8_t data = ud->find_channel(
-            data_2);
+    const SRV_Channel::Aux_servo_function_t data_2 = static_cast<SRV_Channel::Aux_servo_function_t>(raw_data_2);
+    uint8_t data_5003 = {};
+    const bool data = ud->find_channel(
+            data_2,
+            data_5003);
 
-    lua_pushinteger(L, data);
+    if (data) {
+        lua_pushinteger(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 

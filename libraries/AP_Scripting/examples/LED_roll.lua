@@ -34,6 +34,29 @@ function constrain(v, vmin, vmax)
    return v
 end
 
+local rainbow = {    
+  { 255, 0, 0 },    
+  { 255, 127, 0 },    
+  { 255, 255, 0 },    
+  { 0,   255, 0 },    
+  { 0,   0,   255 },    
+  { 75,  0,   130 },    
+  { 143, 0,   255 },    
+}
+
+function set_Rainbow(chan, led, v)    
+  local num_rows = #rainbow
+  local row = constrain(v * num_rows, 1, num_rows)
+  local v0 = row / num_rows
+  local v1 = (row+1) / num_rows
+  local p = (v - v0) / (v1 - v0)
+  serialLED:set_RGB(chan,
+                    1 << led,
+                    (rainbow[row].rgb[0] + p * (float(rainbow[row+1].rgb[0]) - float(rainbow[row].rgb[0]))),
+                    (rainbow[row].rgb[1] + p * (float(rainbow[row+1].rgb[1]) - float(rainbow[row].rgb[1]))),
+                    (rainbow[row].rgb[2] + p * (float(rainbow[row+1].rgb[2]) - float(rainbow[row].rgb[2]))))
+end
+
 function update_LEDs()
 
   -- 16 LEDs per wing, two channels
@@ -43,8 +66,8 @@ function update_LEDs()
     local v_left  = constrain(0.5 * (1 - (roll/45) * (led / num_leds)), 0, 1)
     local v_right = constrain(0.5 * (1 + (roll/45) * (led / num_leds)), 0, 1)
 
-    serialLED:set_Rainbow(chan_left, 1<<led, v_left)
-    serialLED:set_Rainbow(chan_right,1<<led, v_right)
+    serialLED:set_Rainbow(chan_left, led, v_left)
+    serialLED:set_Rainbow(chan_right,led, v_right)
   end
   serialLED:send()
 
