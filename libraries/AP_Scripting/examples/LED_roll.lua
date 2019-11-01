@@ -14,7 +14,7 @@ chan_right = SRV_Channels:find_channel(121)
 gcs:send_text(6, string.format("LEDs: chan_left=" .. tostring(chan_left)))
 gcs:send_text(6, string.format("LEDs: chan_right=" .. tostring(chan_right)))
 
-if chan_left < 0 or chan_right < 0 then
+if not (chan_left and chan_right) then
     gcs:send_text(6, string.format("LEDs: channels not set"))
     return
 end
