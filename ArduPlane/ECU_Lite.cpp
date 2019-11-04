@@ -30,10 +30,15 @@
     //char test[]="RT:35 RPM:6542 V:49.8 A:-5.2 B:98 PWM:1223 CH:1 ESC:1290 CT:1 ER:0 CM:1";
     //sscanf(test, "RT:%f RPM:%f V:%f A:%f B:%d CH:%d ER:%d",
     //&ecu_lite_running_time, &ecu_lite_rpm, &ecu_lite_voltage, &ecu_lite_amperage, &ecu_lite_fuel, &ecu_lite_charging, &ecu_lite_esc_resets);
+
+    // don't run if we don't have a port
+    if (ecu_port == nullptr) {
+        return;
+    }
     
-    int n = hal.uartE->available();
+    int n = ecu_port->available();
     for (int i = 0; i < n; i++) {
-        char received = hal.uartE->read();
+        char received = ecu_port->read();
 
         line_buffer[line_index] = received;
 
