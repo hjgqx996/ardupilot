@@ -52,7 +52,7 @@ public:
     */
     float       norm_input_dz() const;
 
-    uint8_t     percent_input() const;
+    float       percent_input() const; // percent from 0 to 1
     int16_t     pwm_to_range() const;
     int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
 
