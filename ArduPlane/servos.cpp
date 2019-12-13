@@ -167,7 +167,7 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
 /*
   setup flaperon output channels
  */
-void Plane::flaperon_update(int8_t flap_percent)
+void Plane::flaperon_update(float flap_percent)
 {
     if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon_left) &&
         !SRV_Channels::function_assigned(SRV_Channel::k_flaperon_right)) {
@@ -179,8 +179,8 @@ void Plane::flaperon_update(int8_t flap_percent)
       or from auto flaps.
      */
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    float flaperon_left  = constrain_float(aileron + flap_percent * 4500, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - flap_percent * 4500, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
@@ -475,13 +475,14 @@ void Plane::set_servos_controlled(void)
 void Plane::set_servos_flaps(void)
 {
     // Auto flap deployment
-    int8_t auto_flap_percent = 0;
-    int8_t manual_flap_percent = 0;
+    float auto_flap_percent = 0;
+    float manual_flap_percent = 0;
 
     // work out any manual flap input
     RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
     if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        manual_flap_percent = flapin->percent_input();
+        manual_flap_percent = (flapin->percent_input() - 0.5) * 2;
+        gcs().send_text(MAV_SEVERITY_INFO, "Flap: %.2f -> %.2f", flapin->percent_input(), manual_flap_percent);
     }
 
     if (auto_throttle_mode) {
@@ -527,9 +528,9 @@ void Plane::set_servos_flaps(void)
     }
 
     // manual flap input overrides auto flap input
-    if (abs(manual_flap_percent) > auto_flap_percent) {
+//    if (abs(manual_flap_percent) > auto_flap_percent) {
         auto_flap_percent = manual_flap_percent;
-    }
+//    }
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, auto_flap_percent);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap, manual_flap_percent);
